@@ -1,21 +1,19 @@
-import { date, uuid, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { date, uuid, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
-	id: uuid("id").primaryKey(),
+	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),
-	email: text("email").notNull().unique(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at")
+		.notNull()
 		.defaultNow()
-		.notNull()
 		.$onUpdate(() => new Date()),
-	scheduleId: uuid("schedule_id")
-		.notNull()
-		.references(() => schedules.id, { onDelete: "cascade" }),
+	email: varchar("email", { length: 256 }).unique().notNull(),
+	hashedPassword: varchar("hashed_password").notNull().default("unset"),
 });
 
 export const schedules = pgTable("schedules", {
-	id: uuid("id").primaryKey(),
+	id: uuid("id").primaryKey().defaultRandom(),
 	dates: date("dates").notNull().array(),
 	startTime: timestamp("start_time").notNull(),
 	endTime: timestamp("end_time").notNull(),
@@ -24,7 +22,12 @@ export const schedules = pgTable("schedules", {
 		.defaultNow()
 		.notNull()
 		.$onUpdate(() => new Date()),
+	userId: uuid("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
 });
 
+export type NewUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type NewSchedule = typeof schedules.$inferInsert;
 export type Schedule = typeof schedules.$inferSelect;
