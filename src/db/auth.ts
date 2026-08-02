@@ -57,7 +57,7 @@ export function validateJWT(tokenString: string, secret: string): string {
 }
 
 //gets bearer token from request header
-export function getBearerToken(req: Request): string {
+export function getBearerTokenFromReq(req: Request): string {
 	const header = req.get("Authorization");
 	const result = header && header.split(" ")[1];
 	if (result == undefined) throw new UnauthorizedError("failed to get bearer token from request");

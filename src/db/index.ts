@@ -11,4 +11,4 @@ if (!connectionString) {
 
 // Disable prefetch for environments like serverless if needed
 const client = postgres(connectionString);
-export const db = drizzle(client, { schema });
+export const db = drizzle(client, { schema, logger: true });

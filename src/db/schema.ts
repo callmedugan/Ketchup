@@ -14,7 +14,7 @@ export const users = pgTable("users", {
 
 export const schedules = pgTable("schedules", {
 	id: uuid("id").primaryKey().defaultRandom(),
-	dates: date("dates").notNull().array(),
+	dates: date("dates").array().notNull(),
 	startTime: timestamp("start_time").notNull(),
 	endTime: timestamp("end_time").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -27,7 +27,8 @@ export const schedules = pgTable("schedules", {
 		.references(() => users.id, { onDelete: "cascade" }),
 });
 
-export type NewUser = typeof users.$inferInsert;
-export type User = typeof users.$inferSelect;
-export type NewSchedule = typeof schedules.$inferInsert;
-export type Schedule = typeof schedules.$inferSelect;
+export type User = typeof users.$inferInsert;
+export type Schedule = typeof schedules.$inferInsert;
+
+export type UserRecord = typeof users.$inferSelect;
+export type ScheduleRecord = typeof schedules.$inferSelect;
