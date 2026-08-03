@@ -1,6 +1,9 @@
-import { uuid, pgTable, text, timestamp, varchar, pgEnum } from "drizzle-orm/pg-core";
+import { primaryKey, uuid, pgTable, text, timestamp, varchar, pgEnum } from "drizzle-orm/pg-core";
 
-//users
+/* ========================================================================= */
+//                        users
+/* ========================================================================= */
+
 export type User = typeof users.$inferInsert;
 export type Schedule = typeof schedules.$inferInsert;
 export const users = pgTable("users", {
@@ -15,7 +18,10 @@ export const users = pgTable("users", {
 	hashedPassword: varchar("hashed_password").notNull().default("unset"),
 });
 
-//schedules
+/* ========================================================================= */
+//                        schedules
+/* ========================================================================= */
+
 export type UserRecord = typeof users.$inferSelect;
 export type ScheduleRecord = typeof schedules.$inferSelect;
 
@@ -43,8 +49,10 @@ export function isValidRepeatType(obj: any): obj is ScheduleRepeatType {
 
 	return false;
 }
+/* ========================================================================= */
+//                        refresh tokens
+/* ========================================================================= */
 
-// refresh tokens
 export type RefreshToken = typeof refreshTokens.$inferInsert;
 export const refreshTokens = pgTable("refresh_tokens", {
 	token: text("token").primaryKey(),
@@ -60,3 +68,35 @@ export const refreshTokens = pgTable("refresh_tokens", {
 	//null if not revoked
 	revokedAt: timestamp("revoked_at"),
 });
+
+/* ========================================================================= */
+//                        friends
+/* ========================================================================= */
+
+export const friendStatusEnum = pgEnum("type", ["requested", "accepted"]);
+export type Friend = typeof friends.$inferInsert;
+
+export const friends = pgTable("friends", {
+	userId: uuid("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" })
+		.primaryKey(),
+	friendId: uuid("friend_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at")
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+	status: friendStatusEnum("status").notNull(),
+});
+
+export type FriendStatusType = "requested" | "accepted";
+export function isValidFriendStatus(obj: any): obj is FriendStatusType {
+	if (!obj || typeof obj !== "string") return false;
+
+	if (obj === "requested" || "accepted") return true;
+
+	return false;
+}

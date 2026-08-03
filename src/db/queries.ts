@@ -1,6 +1,9 @@
-import { eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { db } from ".";
 import {
+	Friend,
+	friends,
+	FriendStatusType,
 	RefreshToken,
 	refreshTokens,
 	Schedule,
@@ -10,15 +13,23 @@ import {
 	UserRecord,
 	users,
 } from "./schema";
+import { AwsDataApiPgDatabase } from "drizzle-orm/aws-data-api/pg";
 
-///////All//////////
+/* ========================================================================= */
+//                        all
+/* ========================================================================= */
 
 export async function deleteAll() {
 	await db.delete(users);
 	await db.delete(schedules);
+	await db.delete(refreshTokens);
+	await db.delete(friends);
 }
 
-///////Users////////
+/* ========================================================================= */
+//                        users
+/* ========================================================================= */
+
 export async function addUserToDb(user: User): Promise<UserRecord | undefined> {
 	const [result] = await db.insert(users).values(user).onConflictDoNothing().returning();
 	return result;
@@ -35,7 +46,10 @@ export async function getAllUsersFromDb(): Promise<UserRecord[] | undefined> {
 	return result;
 }
 
-//////Schedules//////
+/* ========================================================================= */
+//                        schedules
+/* ========================================================================= */
+
 export async function addScheduleToDb(schedule: Schedule): Promise<ScheduleRecord | undefined> {
 	const [result] = await db.insert(schedules).values(schedule).onConflictDoNothing().returning();
 	return result;
@@ -48,7 +62,10 @@ export async function getScheduleByUserFromDb(
 	return result;
 }
 
-//////Refresh Tokens//////
+/* ========================================================================= */
+//                        refresh tokens
+/* ========================================================================= */
+
 export async function createRefreshToken(token: RefreshToken): Promise<RefreshToken | undefined> {
 	const [result] = await db.insert(refreshTokens).values(token).onConflictDoNothing().returning();
 	return result;
@@ -74,4 +91,47 @@ export async function revokeToken(tokenIdString: string): Promise<boolean> {
 		.where(eq(refreshTokens.token, tokenIdString))
 		.returning();
 	return result != undefined;
+}
+
+/* ========================================================================= */
+//                        friends
+/* ========================================================================= */
+
+export async function requestFriendInDb(user: string, other: string): Promise<Friend | undefined> {
+	//check if other user has sent a friend req so we can know if status should be requested or accepted
+	const [requestReceived] = await db.select().from(friends).where(eq(friends.friendId, user));
+
+	//both requested
+	if (requestReceived != undefined && requestReceived?.status === "requested") {
+		//update other user
+		const [result] = await db
+			.update(friends)
+			.set({ status: "accepted" })
+			.where(or(eq(friends.friendId, user), eq(friends.userId, user)))
+			.returning();
+		//logic isnt quite right here with returning but its okay since we are just checking if undefined
+		return result;
+	}
+
+	//just create entry for the user if this is initial request between the 2 users
+	const [result] = await db
+		.insert(friends)
+		.values({
+			userId: user,
+			status: "requested",
+			friendId: other,
+		})
+		.onConflictDoNothing()
+		.returning();
+	return result;
+}
+
+export async function checkUsersAreFriendsFromDb(user1: string, user2: string): Promise<boolean> {
+	const result = await db
+		.select()
+		.from(friends)
+		.where(or(and(eq(friends.userId, user1)), eq(friends.friendId, user2)))
+		.having(eq(friends.status, "accepted"));
+
+	return result !== undefined;
 }

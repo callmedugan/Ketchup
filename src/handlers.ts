@@ -5,11 +5,12 @@ import {
 	addScheduleToDb,
 	addUserToDb,
 	createRefreshToken,
-	deleteAll as deleteUsersAndSchedulesDb,
+	deleteAll as deleteDb,
 	getAllUsersFromDb,
 	getRefreshTokenUser,
 	getScheduleByUserFromDb,
 	getUserByEmail,
+	requestFriendInDb,
 } from "./db/queries";
 import { checkPasswordHash, hashPassword, makeJWT, makeRefreshToken, validateJWT } from "./db/auth";
 
@@ -284,9 +285,42 @@ export async function handlerReset(req: Request, res: Response) {
 	if (process.env.PLATFORM !== "dev") {
 		res.status(403);
 	} else {
-		await deleteUsersAndSchedulesDb();
+		await deleteDb();
 		res.status(200).send("Reset complete");
 	}
+}
+/* ========================================================================= */
+//                        friends
+/* ========================================================================= */
+
+export async function handlerRequestFriend(req: Request, res: Response) {
+	//validated user
+	const userId = req.userId;
+
+	//define shape
+	type Shape = {
+		friendId: string;
+	};
+
+	//get parsed body
+	const parse: Shape = req.body;
+
+	//handle the parsed data
+	if (!userId || userId === "") throw new BadRequestError("userId cannot be blank");
+	if (!parse.friendId || parse.friendId === "")
+		throw new BadRequestError("friend id cannot be blank");
+
+	//result
+	const result = await requestFriendInDb(userId, parse.friendId);
+	if (result == undefined) throw new Error("failed to request friend");
+
+	res.status(201).send({
+		userId: result.userId,
+		friendId: result.friendId,
+		createdAt: result.createdAt,
+		updatedAt: result.updatedAt,
+		status: result.status,
+	});
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
