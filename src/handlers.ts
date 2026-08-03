@@ -1,4 +1,4 @@
-import { Schedule } from "./db/schema";
+import { isValidRepeatType, Schedule, ScheduleRepeatType } from "./db/schema";
 import express, { Request, Response, NextFunction } from "express";
 import { BadRequestError, NotFoundError, ForbiddenError, UnauthorizedError } from "./error";
 import {
@@ -6,6 +6,7 @@ import {
 	addUserToDb,
 	deleteAll as deleteUsersAndSchedulesDb,
 	getAllUsersFromDb,
+	getScheduleByUserFromDb,
 } from "./db/queries";
 import { getBearerTokenFromReq, hashPassword, validateJWT } from "./db/auth";
 
@@ -85,7 +86,7 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 		userId: string;
 		startTime: Date;
 		endTime: Date;
-		dates: string[]; //ex:08-02-2026
+		repeatType: ScheduleRepeatType;
 	};
 
 	//get parsed body
@@ -95,13 +96,12 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	if (!parse.userId || parse.userId === "") throw new BadRequestError("userId cannot be blank");
 	if (!parse.startTime) throw new BadRequestError("Start Time cannot be blank");
 	if (!parse.endTime) throw new BadRequestError("End Time cannot be blank");
-	if (!parse.dates || !Array.isArray(parse.dates))
-		throw new BadRequestError("Dates cannot be blank");
+	if (!isValidRepeatType(parse.repeatType)) throw new BadRequestError("Invalid repeat type");
 
 	//result
 	const result = await addScheduleToDb({
 		userId: parse.userId,
-		dates: parse.dates,
+		repeatType: parse.repeatType,
 		startTime: new Date(parse.startTime),
 		endTime: new Date(parse.endTime),
 	});
@@ -110,13 +110,41 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	//return 201 status with password omitted
 	res.status(201).send({
 		id: result.id,
-		dates: result.dates,
+		repeatType: result.repeatType,
 		startTime: result.startTime,
 		endTime: result.endTime,
 		createdAt: result.createdAt,
 		updatedAt: result.updatedAt,
 		userId: result.userId,
 	});
+}
+
+export async function handlerGetScheduleByUserId(req: Request, res: Response) {
+	//get user id from passed param
+	const userId = req.params.userId;
+	if (!userId || typeof userId !== "string") throw new BadRequestError("userId cannot be blank");
+
+	//call db
+	const schedules = await getScheduleByUserFromDb(userId);
+	if (schedules == undefined)
+		throw new Error("user has no schedule or failed to retrieve schedules");
+
+	const result = [];
+	//build result structure
+	for (const s of schedules) {
+		result.push({
+			id: s.id,
+			createdAt: s.createdAt,
+			updatedAt: s.updatedAt,
+			repeatType: s.repeatType,
+			userId: s.userId,
+			startTime: s.startTime,
+			endTime: s.endTime,
+		});
+	}
+
+	//return 200 status with data
+	res.status(200).send(result);
 }
 
 export function handlerError(err: Error, req: Request, res: Response, next: NextFunction) {
@@ -138,11 +166,7 @@ export async function handlerReset(req: Request, res: Response) {
 ////////////////////////////////////////////////////////////////////////////////////////////
 //Other
 ////////////////////////////////////////////////////////////////////////////////////////////
-export function getScheduleOverlap(
-	userId: string,
-	first: Schedule,
-	second: Schedule,
-): Schedule | undefined {
+export function getScheduleOverlap(first: Schedule, second: Schedule): Schedule | undefined {
 	//check for overlap first though because schedules are stored as an array of dates that are all the same time
 	//so if there is no overlap, then no need to check the dates
 	//looking for start to be less than end if there is an overlap
@@ -156,31 +180,31 @@ export function getScheduleOverlap(
 
 	//need to correct for timezones so using utc
 	//loop through both set of dates and see if any dates match
-	for (const f of first.dates) {
-		const firstDate = new Date(f);
-		if (isNaN(firstDate.getTime())) continue;
+	// for (const f of first.dates) {
+	// 	const firstDate = new Date(f);
+	// 	if (isNaN(firstDate.getTime())) continue;
 
-		for (const s of second.dates) {
-			const secondDate = new Date(f);
-			if (isNaN(secondDate.getTime())) continue;
+	// 	for (const s of second.dates) {
+	// 		const secondDate = new Date(f);
+	// 		if (isNaN(secondDate.getTime())) continue;
 
-			// if dates are the same utc dates add to the overlap array
-			if (
-				firstDate.getUTCFullYear() === secondDate.getUTCFullYear() &&
-				firstDate.getUTCMonth() === secondDate.getUTCMonth() &&
-				firstDate.getUTCDate() === secondDate.getUTCDate()
-			) {
-				dateOverlaps.push(firstDate.toISOString());
-			}
-		}
-	}
+	// 		// if dates are the same utc dates add to the overlap array
+	// 		if (
+	// 			firstDate.getUTCFullYear() === secondDate.getUTCFullYear() &&
+	// 			firstDate.getUTCMonth() === secondDate.getUTCMonth() &&
+	// 			firstDate.getUTCDate() === secondDate.getUTCDate()
+	// 		) {
+	// 			dateOverlaps.push(firstDate.toISOString());
+	// 		}
+	// 	}
+	// }
 
 	//build result
 	const overlap: Schedule = {
-		dates: dateOverlaps,
+		repeatType: first.repeatType === second.repeatType ? first.repeatType : "once",
 		startTime: timeOverlap.start,
 		endTime: timeOverlap.end,
-		userId: userId,
+		userId: "null",
 	};
 	return overlap;
 }

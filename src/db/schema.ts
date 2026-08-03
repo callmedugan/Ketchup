@@ -1,5 +1,8 @@
-import { date, uuid, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { uuid, pgTable, text, timestamp, varchar, pgEnum } from "drizzle-orm/pg-core";
 
+//users
+export type User = typeof users.$inferInsert;
+export type Schedule = typeof schedules.$inferInsert;
 export const users = pgTable("users", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),
@@ -12,9 +15,14 @@ export const users = pgTable("users", {
 	hashedPassword: varchar("hashed_password").notNull().default("unset"),
 });
 
+//schedules
+export type UserRecord = typeof users.$inferSelect;
+export type ScheduleRecord = typeof schedules.$inferSelect;
+
+export const scheduleRepeatEnum = pgEnum("repeat_type", ["once", "daily", "weekly"]);
 export const schedules = pgTable("schedules", {
 	id: uuid("id").primaryKey().defaultRandom(),
-	dates: date("dates").array().notNull(),
+	repeatType: scheduleRepeatEnum("repeat_type").default("once").notNull(),
 	startTime: timestamp("start_time").notNull(),
 	endTime: timestamp("end_time").notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -27,8 +35,11 @@ export const schedules = pgTable("schedules", {
 		.references(() => users.id, { onDelete: "cascade" }),
 });
 
-export type User = typeof users.$inferInsert;
-export type Schedule = typeof schedules.$inferInsert;
+export type ScheduleRepeatType = "once" | "daily" | "weekly";
+export function isValidRepeatType(obj: any): obj is ScheduleRepeatType {
+	if (!obj || typeof obj !== "string") return false;
 
-export type UserRecord = typeof users.$inferSelect;
-export type ScheduleRecord = typeof schedules.$inferSelect;
+	if (obj === "once" || obj === "daily" || obj === "weekly") return true;
+
+	return false;
+}
