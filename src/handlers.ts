@@ -147,19 +147,74 @@ export async function handlerGetScheduleByUserId(req: Request, res: Response) {
 	res.status(200).send(result);
 }
 
+export async function handlerCompareUsersSchedules(req: Request, res: Response) {
+	// compare 2 users
+
+	//validate user is auth first - will throw if failed auth
+	//const token = getBearerTokenFromReq(req);
+	//const validatedUserId = validateJWT(token, process.env.JWT_SECRET!);
+
+	//define shape
+	type Shape = {
+		userId1: string;
+		userId2: string;
+	};
+
+	//get parsed body
+	const parse: Shape = req.body;
+
+	//get user id from passed param
+	if (!parse.userId1 || parse.userId1 === "") throw new BadRequestError("userId1 cannot be blank");
+	if (!parse.userId2 || parse.userId2 === "") throw new BadRequestError("userId2 cannot be blank");
+
+	//call db
+	const user1Schedules = await getScheduleByUserFromDb(parse.userId1);
+	if (user1Schedules == undefined)
+		throw new Error("user 1 has no schedule or failed to retrieve schedules");
+	const user2Schedules = await getScheduleByUserFromDb(parse.userId2);
+	if (user2Schedules == undefined)
+		throw new Error("user 2 has no schedule or failed to retrieve schedules");
+
+	const allOverlaps: Schedule[] = [];
+
+	//loop through all schedule combinations and find overlaps
+	for (const a of user1Schedules) {
+		for (const b of user2Schedules) {
+			const overlap = getScheduleOverlap(a, b);
+			if (overlap != undefined) allOverlaps.push(overlap);
+		}
+	}
+
+	const result = [];
+	//build result structure
+	for (const s of allOverlaps) {
+		result.push({
+			id: s.id,
+			createdAt: s.createdAt,
+			updatedAt: s.updatedAt,
+			repeatType: s.repeatType,
+			userId: s.userId,
+			startTime: s.startTime,
+			endTime: s.endTime,
+		});
+	}
+
+	//return 200 status with data
+	res.status(200).send(result);
+}
+
 export function handlerError(err: Error, req: Request, res: Response, next: NextFunction) {
 	console.error(err.stack);
 	res.status(500).json({ error: "Internal Server Error" });
 }
 
 export async function handlerReset(req: Request, res: Response) {
-	res.set("Content-Type", "text/plain; charset=utf-8");
+	//res.set("Content-Type", "text/plain; charset=utf-8");
 	if (process.env.PLATFORM !== "dev") {
 		res.status(403);
 	} else {
 		await deleteUsersAndSchedulesDb();
-		res.send("Reset complete");
-		res.status(200);
+		res.status(200).send("Reset complete");
 	}
 }
 

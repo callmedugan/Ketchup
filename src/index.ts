@@ -1,6 +1,7 @@
 import express from "express";
 import {
 	handlerApp,
+	handlerCompareUsersSchedules,
 	handlerCreateSchedule,
 	handlerCreateUser,
 	handlerError,
@@ -22,8 +23,10 @@ app.post("/admin/reset", handlerReset);
 app.get("/", handlerApp);
 app.get("/users", handlerGetUsers);
 app.post("/users", handlerCreateUser);
+app.get("/users/overlap", handlerCompareUsersSchedules); //TODO add auth
+
 app.post("/schedules", handlerCreateSchedule); //TODO add auth
-app.get("/schedules/:userId", handlerGetScheduleByUserId); //TODO add auth
+app.get("/schedules/:userId", handlerGetScheduleByUserId); //TODO add auth bc user should be owner or friends with owner
 
 // Error Handling Middleware - must go last
 app.use(handlerError);
