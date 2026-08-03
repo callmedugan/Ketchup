@@ -7,8 +7,11 @@ import {
 	handlerError,
 	handlerGetScheduleByUserId,
 	handlerGetUsers,
+	handlerLogin,
+	handlerRefresh,
 	handlerReset,
 } from "./handlers";
+import { middlewareAuthentication } from "./middleware";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,13 +23,15 @@ app.use(express.json());
 app.post("/admin/reset", handlerReset);
 
 // handlers
-app.get("/", handlerApp);
-app.get("/users", handlerGetUsers);
-app.post("/users", handlerCreateUser);
-app.get("/users/overlap", handlerCompareUsersSchedules); //TODO add auth
+app.get("/api/", handlerApp);
+app.post("/api/login", handlerLogin);
+app.get("/api/users", handlerGetUsers);
+app.post("/api/users", handlerCreateUser);
+app.get("/api/users/overlap", middlewareAuthentication, handlerCompareUsersSchedules);
+app.post("/api/refresh", handlerRefresh);
 
-app.post("/schedules", handlerCreateSchedule); //TODO add auth
-app.get("/schedules/:userId", handlerGetScheduleByUserId); //TODO add auth bc user should be owner or friends with owner
+app.post("/api/schedules", middlewareAuthentication, handlerCreateSchedule);
+app.get("/api/schedules/:userId", handlerGetScheduleByUserId); //TODO add auth bc user should be owner or friends with owner
 
 // Error Handling Middleware - must go last
 app.use(handlerError);

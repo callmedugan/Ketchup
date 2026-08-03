@@ -56,14 +56,6 @@ export function validateJWT(tokenString: string, secret: string): string {
 	}
 }
 
-//gets bearer token from request header
-export function getBearerTokenFromReq(req: Request): string {
-	const header = req.get("Authorization");
-	const result = header && header.split(" ")[1];
-	if (result == undefined) throw new UnauthorizedError("failed to get bearer token from request");
-	return result;
-}
-
 //creates a refresh token
 export function makeRefreshToken(): string {
 	const result = randomBytes(256).toString("hex");

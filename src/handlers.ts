@@ -4,11 +4,14 @@ import { BadRequestError, NotFoundError, ForbiddenError, UnauthorizedError } fro
 import {
 	addScheduleToDb,
 	addUserToDb,
+	createRefreshToken,
 	deleteAll as deleteUsersAndSchedulesDb,
 	getAllUsersFromDb,
+	getRefreshTokenUser,
 	getScheduleByUserFromDb,
+	getUserByEmail,
 } from "./db/queries";
-import { getBearerTokenFromReq, hashPassword, validateJWT } from "./db/auth";
+import { checkPasswordHash, hashPassword, makeJWT, makeRefreshToken, validateJWT } from "./db/auth";
 
 export function handlerApp(req: Request, res: Response) {
 	return res.status(200).json({ message: "Hello from TypeScript & Express!" });
@@ -52,6 +55,79 @@ export async function handlerCreateUser(req: Request, res: Response) {
 	});
 }
 
+export async function handlerLogin(req: Request, res: Response) {
+	//define shape
+	type Shape = {
+		email: string;
+		password: string;
+	};
+
+	//get parsed body
+	const parse: Shape = req.body;
+
+	//handle the parsed data
+	if (!parse.email || parse.email === "") throw new BadRequestError("Email cannot be blank");
+	if (!parse.password || parse.password === "")
+		throw new BadRequestError("Password cannot be blank");
+
+	//hash provided password
+	const user = await getUserByEmail(parse.email);
+	if (user == undefined || user.hashedPassword == undefined || user.id == undefined) {
+		throw new UnauthorizedError("incorrect email or password");
+	}
+
+	//auth
+	let isAuth = false;
+	try {
+		isAuth = await checkPasswordHash(parse.password, user.hashedPassword);
+	} catch (err) {
+		throw new UnauthorizedError("incorrect email or password");
+	}
+	if (!isAuth) throw new UnauthorizedError("incorrect email or password");
+
+	//success
+	const token = makeJWT(user.id, 3600, process.env.JWT_SECRET!);
+	const refreshTokenString = makeRefreshToken();
+	const expiration = new Date();
+	expiration.setDate(expiration.getDate() + 60);
+	const refreshToken = await createRefreshToken({
+		token: refreshTokenString,
+		userId: user.id,
+		expiresAt: expiration,
+	});
+	if (refreshToken == undefined) throw new Error("failed to create refresh token on login");
+
+	//return with password omitted
+	res.status(200).send({
+		id: user.id,
+		email: user.email,
+		createdAt: user.createdAt,
+		updatedAt: user.updatedAt,
+		token: token,
+		refreshToken: refreshTokenString,
+	});
+}
+
+export async function handlerRefresh(req: Request, res: Response) {
+	//get bearer token from auth header in req
+	const header = req.get("Authorization");
+	const token = header && header.split(" ")[1];
+	if (token == undefined)
+		throw new UnauthorizedError("failed to get bearer token from req headers");
+
+	//get token that was provided and look up the refresh token to see if valid and not expired
+	const tokenUser = await getRefreshTokenUser(token);
+	if (tokenUser == undefined) throw new UnauthorizedError("token is invalid or expired");
+
+	//success - create and issue a new jwt token
+	const newTokenString = makeJWT(tokenUser, 3600, process.env.JWT_SECRET!);
+
+	//return with password omitted
+	res.status(200).send({
+		token: newTokenString,
+	});
+}
+
 ///need to add filters - mainly used for finding friends?
 export async function handlerGetUsers(req: Request, res: Response) {
 	//console.log(await db.select());
@@ -77,13 +153,11 @@ export async function handlerGetUsers(req: Request, res: Response) {
 }
 
 export async function handlerCreateSchedule(req: Request, res: Response) {
-	//validate user is auth first - will throw if failed auth
-	//const token = getBearerTokenFromReq(req);
-	//const validatedUserId = validateJWT(token, process.env.JWT_SECRET!);
+	//validated user
+	const userId = req.userId;
 
 	//define shape
 	type Shape = {
-		userId: string;
 		startTime: Date;
 		endTime: Date;
 		repeatType: ScheduleRepeatType;
@@ -93,14 +167,14 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	const parse: Shape = req.body;
 
 	//handle the parsed data
-	if (!parse.userId || parse.userId === "") throw new BadRequestError("userId cannot be blank");
+	if (!userId || userId === "") throw new BadRequestError("userId cannot be blank");
 	if (!parse.startTime) throw new BadRequestError("Start Time cannot be blank");
 	if (!parse.endTime) throw new BadRequestError("End Time cannot be blank");
 	if (!isValidRepeatType(parse.repeatType)) throw new BadRequestError("Invalid repeat type");
 
 	//result
 	const result = await addScheduleToDb({
-		userId: parse.userId,
+		userId: userId,
 		repeatType: parse.repeatType,
 		startTime: new Date(parse.startTime),
 		endTime: new Date(parse.endTime),
@@ -149,14 +223,11 @@ export async function handlerGetScheduleByUserId(req: Request, res: Response) {
 
 export async function handlerCompareUsersSchedules(req: Request, res: Response) {
 	// compare 2 users
-
 	//validate user is auth first - will throw if failed auth
-	//const token = getBearerTokenFromReq(req);
-	//const validatedUserId = validateJWT(token, process.env.JWT_SECRET!);
+	const userId1 = req.userId;
 
 	//define shape
 	type Shape = {
-		userId1: string;
 		userId2: string;
 	};
 
@@ -164,11 +235,11 @@ export async function handlerCompareUsersSchedules(req: Request, res: Response) 
 	const parse: Shape = req.body;
 
 	//get user id from passed param
-	if (!parse.userId1 || parse.userId1 === "") throw new BadRequestError("userId1 cannot be blank");
+	if (!userId1 || userId1 === "") throw new BadRequestError("userId1 cannot be blank");
 	if (!parse.userId2 || parse.userId2 === "") throw new BadRequestError("userId2 cannot be blank");
 
 	//call db
-	const user1Schedules = await getScheduleByUserFromDb(parse.userId1);
+	const user1Schedules = await getScheduleByUserFromDb(userId1);
 	if (user1Schedules == undefined)
 		throw new Error("user 1 has no schedule or failed to retrieve schedules");
 	const user2Schedules = await getScheduleByUserFromDb(parse.userId2);

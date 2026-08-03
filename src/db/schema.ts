@@ -43,3 +43,20 @@ export function isValidRepeatType(obj: any): obj is ScheduleRepeatType {
 
 	return false;
 }
+
+// refresh tokens
+export type RefreshToken = typeof refreshTokens.$inferInsert;
+export const refreshTokens = pgTable("refresh_tokens", {
+	token: text("token").primaryKey(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at")
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+	userId: uuid("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	expiresAt: timestamp("expires_at").notNull(),
+	//null if not revoked
+	revokedAt: timestamp("revoked_at"),
+});
