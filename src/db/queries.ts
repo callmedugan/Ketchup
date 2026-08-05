@@ -102,15 +102,14 @@ export async function requestFriendInDb(user: string, other: string): Promise<Fr
 	const [requestReceived] = await db.select().from(friends).where(eq(friends.friendId, user));
 
 	//both requested
-	if (requestReceived != undefined && requestReceived?.status === "requested") {
+	const isMutual = requestReceived != undefined && requestReceived?.status === "requested";
+	if (isMutual) {
 		//update other user
-		const [result] = await db
+		const [otherUserResult] = await db
 			.update(friends)
 			.set({ status: "accepted" })
-			.where(or(eq(friends.friendId, user), eq(friends.userId, user)))
+			.where(eq(friends.friendId, user))
 			.returning();
-		//logic isnt quite right here with returning but its okay since we are just checking if undefined
-		return result;
 	}
 
 	//just create entry for the user if this is initial request between the 2 users
@@ -118,7 +117,7 @@ export async function requestFriendInDb(user: string, other: string): Promise<Fr
 		.insert(friends)
 		.values({
 			userId: user,
-			status: "requested",
+			status: isMutual ? "accepted" : "requested",
 			friendId: other,
 		})
 		.onConflictDoNothing()
@@ -127,11 +126,12 @@ export async function requestFriendInDb(user: string, other: string): Promise<Fr
 }
 
 export async function checkUsersAreFriendsFromDb(user1: string, user2: string): Promise<boolean> {
-	const result = await db
+	const [result] = await db
 		.select()
 		.from(friends)
-		.where(or(and(eq(friends.userId, user1)), eq(friends.friendId, user2)))
-		.having(eq(friends.status, "accepted"));
+		.where(
+			and(eq(friends.userId, user1), eq(friends.friendId, user2), eq(friends.status, "accepted")),
+		);
 
 	return result !== undefined;
 }

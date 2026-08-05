@@ -195,12 +195,16 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 }
 
 export async function handlerGetScheduleByUserId(req: Request, res: Response) {
+	//validated user
+	const userId = req.userId;
+
 	//get user id from passed param
-	const userId = req.params.userId;
-	if (!userId || typeof userId !== "string") throw new BadRequestError("userId cannot be blank");
+	const lookupUserId = req.params.userId;
+	if (!lookupUserId || typeof lookupUserId !== "string")
+		throw new BadRequestError("userId cannot be blank");
 
 	//call db
-	const schedules = await getScheduleByUserFromDb(userId);
+	const schedules = await getScheduleByUserFromDb(lookupUserId);
 	if (schedules == undefined)
 		throw new Error("user has no schedule or failed to retrieve schedules");
 
@@ -276,8 +280,26 @@ export async function handlerCompareUsersSchedules(req: Request, res: Response) 
 }
 
 export function handlerError(err: Error, req: Request, res: Response, next: NextFunction) {
-	console.error(err.stack);
-	res.status(500).json({ error: "Internal Server Error" });
+	console.log(err.message);
+	//default to 500
+	let status = 500;
+	let message = "Something went wrong on our end";
+	if (err instanceof BadRequestError) {
+		status = 400;
+		message = err.message;
+	} else if (err instanceof UnauthorizedError) {
+		status = 401;
+		message = err.message;
+	} else if (err instanceof ForbiddenError) {
+		status = 403;
+		message = err.message;
+	} else if (err instanceof NotFoundError) {
+		status = 404;
+		message = err.message;
+	}
+	res.status(status).json({
+		error: message,
+	});
 }
 
 export async function handlerReset(req: Request, res: Response) {

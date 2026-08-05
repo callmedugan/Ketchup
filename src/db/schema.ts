@@ -73,7 +73,7 @@ export const refreshTokens = pgTable("refresh_tokens", {
 //                        friends
 /* ========================================================================= */
 
-export const friendStatusEnum = pgEnum("type", ["requested", "accepted"]);
+export const friendStatusEnum = pgEnum("type", ["requested", "accepted", "blocked"]);
 export type Friend = typeof friends.$inferInsert;
 
 export const friends = pgTable("friends", {
@@ -92,11 +92,11 @@ export const friends = pgTable("friends", {
 	status: friendStatusEnum("status").notNull(),
 });
 
-export type FriendStatusType = "requested" | "accepted";
+export type FriendStatusType = "requested" | "accepted" | "blocked";
 export function isValidFriendStatus(obj: any): obj is FriendStatusType {
 	if (!obj || typeof obj !== "string") return false;
 
-	if (obj === "requested" || "accepted") return true;
+	if (obj === "requested" || "accepted" || "blocked") return true;
 
 	return false;
 }

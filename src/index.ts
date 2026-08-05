@@ -12,7 +12,7 @@ import {
 	handlerRequestFriend,
 	handlerReset,
 } from "./handlers";
-import { middlewareAuthentication } from "./middleware";
+import { middlewareAuthentication, middlewareAuthorizedViewer } from "./middleware";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,17 +28,27 @@ app.post("/admin/reset", handlerReset);
 /* ========================================================================= */
 
 app.get("/api/", handlerApp);
-//users
+
 app.post("/api/login", handlerLogin);
+
+//TODO this should require some kind of query to filter users by or search for users to friend request
 app.get("/api/users", handlerGetUsers);
 app.post("/api/users", handlerCreateUser);
 app.get("/api/users/overlap", middlewareAuthentication, handlerCompareUsersSchedules);
 app.post("/api/refresh", handlerRefresh);
+
 //friends
 app.post("/api/friends/", middlewareAuthentication, handlerRequestFriend);
+
 //schedules
 app.post("/api/schedules", middlewareAuthentication, handlerCreateSchedule);
-app.get("/api/schedules/:userId", handlerGetScheduleByUserId); //TODO add auth bc user should be owner or friends with owner
+// validates user cred and that user is friends with user before showing the schedule
+app.get(
+	"/api/schedules/:userId",
+	middlewareAuthentication,
+	middlewareAuthorizedViewer,
+	handlerGetScheduleByUserId,
+);
 
 /* ========================================================================= */
 //                   Error Handling Middleware - must go last
