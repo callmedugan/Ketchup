@@ -1,6 +1,12 @@
 import { isValidRepeatType, Schedule, ScheduleRepeatType } from "./db/schema";
 import express, { Request, Response, NextFunction } from "express";
-import { BadRequestError, NotFoundError, ForbiddenError, UnauthorizedError } from "./error";
+import {
+	BadRequestError,
+	NotFoundError,
+	ForbiddenError,
+	UnauthorizedError,
+	ConflictError,
+} from "./error";
 import {
 	addScheduleToDb,
 	addUserToDb,
@@ -35,8 +41,12 @@ export async function handlerCreateUser(req: Request, res: Response) {
 	if (!parse.password || parse.password === "")
 		throw new BadRequestError("Password cannot be blank");
 
-	//result
+	//password
 	const hashedPassword = await hashPassword(parse.password);
+
+	//check if user already exists
+	const userExists = await getUserByEmail(parse.email);
+	if (userExists != undefined) throw new ConflictError("Email has an existing account");
 
 	//result
 	const result = await addUserToDb({
@@ -44,7 +54,9 @@ export async function handlerCreateUser(req: Request, res: Response) {
 		email: parse.email,
 		hashedPassword: hashedPassword,
 	});
-	if (result == undefined) throw new Error("something went wrong creating the user");
+	if (result == undefined) throw new Error("Something went wrong creating the user");
+
+	console.log("Created new user: ", result);
 
 	//return 201 status with password omitted
 	res.status(201).send({
@@ -74,7 +86,7 @@ export async function handlerLogin(req: Request, res: Response) {
 	//hash provided password
 	const user = await getUserByEmail(parse.email);
 	if (user == undefined || user.hashedPassword == undefined || user.id == undefined) {
-		throw new UnauthorizedError("incorrect email or password");
+		throw new UnauthorizedError("Incorrect email or password");
 	}
 
 	//auth
@@ -295,6 +307,9 @@ export function handlerError(err: Error, req: Request, res: Response, next: Next
 		message = err.message;
 	} else if (err instanceof NotFoundError) {
 		status = 404;
+		message = err.message;
+	} else if (err instanceof ConflictError) {
+		status = 409;
 		message = err.message;
 	}
 	res.status(status).json({

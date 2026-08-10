@@ -25,3 +25,10 @@ export class NotFoundError extends Error {
 		super(message);
 	}
 }
+
+//409
+export class ConflictError extends Error {
+	constructor(message: string) {
+		super(message);
+	}
+}
