@@ -17,6 +17,7 @@ import {
 	getScheduleByUserFromDb,
 	getUserByEmail,
 	requestFriendInDb,
+	revokeToken,
 } from "./db/queries";
 import { checkPasswordHash, hashPassword, makeJWT, makeRefreshToken, validateJWT } from "./db/auth";
 
@@ -41,22 +42,28 @@ export async function handlerCreateUser(req: Request, res: Response) {
 	if (!parse.password || parse.password === "")
 		throw new BadRequestError("Password cannot be blank");
 
-	//password
+	//validate password
+	if (parse.password.length < 6) throw new BadRequestError("Password must be 6 characters or more");
+	if (parse.password.length > 128)
+		throw new BadRequestError("Password must be 128 characters or less");
 	const hashedPassword = await hashPassword(parse.password);
 
-	//check if user already exists
-	const userExists = await getUserByEmail(parse.email);
+	//validate email
+	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parse.email))
+		throw new BadRequestError("Email is invalid format");
+	const cleanEmail = parse.email.trim().toLowerCase();
+	const userExists = await getUserByEmail(cleanEmail);
 	if (userExists != undefined) throw new ConflictError("Email has an existing account");
 
 	//result
 	const result = await addUserToDb({
 		name: parse.name,
-		email: parse.email,
+		email: cleanEmail,
 		hashedPassword: hashedPassword,
 	});
 	if (result == undefined) throw new Error("Something went wrong creating the user");
 
-	console.log("Created new user: ", result);
+	//console.log("Created new user: ", result);
 
 	//return 201 status with password omitted
 	res.status(201).send({
@@ -94,26 +101,27 @@ export async function handlerLogin(req: Request, res: Response) {
 	try {
 		isAuth = await checkPasswordHash(parse.password, user.hashedPassword);
 	} catch (err) {
-		throw new UnauthorizedError("incorrect email or password");
+		throw new UnauthorizedError("Incorrect email or password");
 	}
-	if (!isAuth) throw new UnauthorizedError("incorrect email or password");
+	if (!isAuth) throw new UnauthorizedError("Incorrect email or password");
 
 	//success
-	const token = makeJWT(user.id, 3600, process.env.JWT_SECRET!);
+	const token = makeJWT(user.id, process.env.JWT_SECRET!);
 	const refreshTokenString = makeRefreshToken();
 	const expiration = new Date();
-	expiration.setDate(expiration.getDate() + 60);
+	expiration.setDate(expiration.getDate() + 3600);
 	const refreshToken = await createRefreshToken({
 		token: refreshTokenString,
 		userId: user.id,
 		expiresAt: expiration,
 	});
-	if (refreshToken == undefined) throw new Error("failed to create refresh token on login");
+	if (refreshToken == undefined) throw new Error("Failed to create refresh token on login");
 
-	//return with password omitted
+	//return
 	res.status(200).send({
 		id: user.id,
 		email: user.email,
+		name: user.name,
 		createdAt: user.createdAt,
 		updatedAt: user.updatedAt,
 		token: token,
@@ -133,12 +141,26 @@ export async function handlerRefresh(req: Request, res: Response) {
 	if (tokenUser == undefined) throw new UnauthorizedError("token is invalid or expired");
 
 	//success - create and issue a new jwt token
-	const newTokenString = makeJWT(tokenUser, 3600, process.env.JWT_SECRET!);
+	const newTokenString = makeJWT(tokenUser, process.env.JWT_SECRET!);
 
-	//return with password omitted
+	//return
 	res.status(200).send({
 		token: newTokenString,
 	});
+}
+
+export async function handlerLogout(req: Request, res: Response) {
+	//validated token from middleware
+	const token = req.token;
+
+	if (token == undefined) throw new BadRequestError("Failed to get token from header to logout");
+
+	//get token that was provided and try to revoke the refresh token
+	const revoke = await revokeToken(token);
+	if (!revoke) throw new Error("User was not logged in - no refresh token exists");
+
+	//return success
+	res.status(200).send();
 }
 
 ///need to add filters - mainly used for finding friends?

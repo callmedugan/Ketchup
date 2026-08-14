@@ -7,6 +7,7 @@ declare global {
 	namespace Express {
 		interface Request {
 			userId?: string; // Declares the injected property globally to make ts hush
+			token?: string;
 		}
 	}
 }
@@ -20,8 +21,9 @@ export async function middlewareAuthentication(req: Request, res: Response, next
 	//check if jwt is valid
 	const validatedUserId = validateJWT(token, process.env.JWT_SECRET!);
 
-	//inject userId
+	//inject userId and token
 	req.userId = validatedUserId;
+	req.token = token;
 
 	return next();
 }

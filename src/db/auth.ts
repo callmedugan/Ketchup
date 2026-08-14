@@ -23,7 +23,7 @@ export async function checkPasswordHash(
 type Payload = Pick<JwtPayload, "iss" | "sub" | "iat" | "exp">;
 
 //creates jwt obviously, expire time is in seconds
-export function makeJWT(userID: string, expiresIn: number, secret: string): string {
+export function makeJWT(userID: string, secret: string, expiresIn: number = 360): string {
 	const issuedTime = Math.floor(Date.now() / 1000);
 	const payload: Payload = {
 		//issuer

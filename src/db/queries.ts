@@ -73,6 +73,7 @@ export async function createRefreshToken(token: RefreshToken): Promise<RefreshTo
 
 //will return undefined if token is invalid or expired, otherwise returns userId
 export async function getRefreshTokenUser(tokenIdString: string): Promise<string | undefined> {
+	console.log(tokenIdString);
 	const [result] = await db
 		.select()
 		.from(refreshTokens)

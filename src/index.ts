@@ -8,6 +8,7 @@ import {
 	handlerGetScheduleByUserId,
 	handlerGetUsers,
 	handlerLogin,
+	handlerLogout,
 	handlerRefresh,
 	handlerRequestFriend,
 	handlerReset,
@@ -38,6 +39,7 @@ app.get("/api/", handlerApp);
 
 app.post("/auth/login", handlerLogin);
 app.post("/auth/refresh", handlerRefresh);
+app.post("/auth/logout", middlewareAuthentication, handlerLogout);
 
 //TODO this should require some kind of query to filter users by or search for users to friend request
 app.get("/api/users", handlerGetUsers);
