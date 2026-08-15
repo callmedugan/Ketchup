@@ -1,4 +1,10 @@
-import { isValidRepeatType, Schedule, ScheduleRepeatType } from "./db/schema";
+import {
+	Friend,
+	FriendDetails,
+	isValidRepeatType,
+	Schedule,
+	ScheduleRepeatType,
+} from "./db/schema";
 import express, { Request, Response, NextFunction } from "express";
 import {
 	BadRequestError,
@@ -13,9 +19,11 @@ import {
 	createRefreshToken,
 	deleteAll as deleteDb,
 	getAllUsersFromDb,
+	getFriendsInDb,
 	getRefreshTokenUser,
 	getScheduleByUserFromDb,
 	getUserByEmail,
+	getUserById,
 	requestFriendInDb,
 	revokeToken,
 } from "./db/queries";
@@ -165,7 +173,6 @@ export async function handlerLogout(req: Request, res: Response) {
 
 ///need to add filters - mainly used for finding friends?
 export async function handlerGetUsers(req: Request, res: Response) {
-	//console.log(await db.select());
 	const users = await getAllUsersFromDb();
 	if (users == undefined)
 		throw new Error("something went wrong with getting user or user does not exist");
@@ -185,6 +192,24 @@ export async function handlerGetUsers(req: Request, res: Response) {
 	//success
 	res.status(200);
 	res.send(result);
+}
+
+export async function handlerGetProfile(req: Request, res: Response) {
+	//validated user
+	const userId = req.userId;
+
+	const result = await getUserById(userId!);
+	if (result == undefined)
+		throw new Error("something went wrong with getting user or user does not exist");
+
+	//success
+	res.status(200).send({
+		id: result.id,
+		createdAt: result.createdAt,
+		updatedAt: result.updatedAt,
+		name: result.name,
+		email: result.email,
+	});
 }
 
 export async function handlerCreateSchedule(req: Request, res: Response) {
@@ -380,6 +405,26 @@ export async function handlerRequestFriend(req: Request, res: Response) {
 		updatedAt: result.updatedAt,
 		status: result.status,
 	});
+}
+
+export async function handlerGetFriends(req: Request, res: Response) {
+	//validated user
+	const userId = req.userId;
+
+	//result
+	const result = await getFriendsInDb(userId!);
+	if (result == undefined) throw new Error("User has no friends");
+
+	const friendsJson: FriendDetails[] = [];
+	for (const r of result) {
+		friendsJson.push({
+			userId: r.userId,
+			name: r.name,
+			updatedAt: r.updatedAt,
+			status: r.status,
+		});
+	}
+	res.status(200).send(friendsJson);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

@@ -18,11 +18,12 @@ export const users = pgTable("users", {
 	hashedPassword: varchar("hashed_password").notNull().default("unset"),
 });
 
+export type UserRecord = typeof users.$inferSelect;
+
 /* ========================================================================= */
 //                        schedules
 /* ========================================================================= */
 
-export type UserRecord = typeof users.$inferSelect;
 export type ScheduleRecord = typeof schedules.$inferSelect;
 
 export const scheduleRepeatEnum = pgEnum("repeat_type", ["once", "daily", "weekly"]);
@@ -75,6 +76,12 @@ export const refreshTokens = pgTable("refresh_tokens", {
 
 export const friendStatusEnum = pgEnum("type", ["requested", "accepted", "blocked"]);
 export type Friend = typeof friends.$inferInsert;
+export type FriendDetails = {
+	userId: typeof friends.$inferSelect.friendId;
+	name: typeof users.$inferSelect.name;
+	updatedAt: typeof friends.$inferSelect.updatedAt;
+	status: typeof friends.$inferSelect.status;
+};
 
 export const friends = pgTable("friends", {
 	userId: uuid("user_id")

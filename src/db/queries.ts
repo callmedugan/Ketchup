@@ -2,6 +2,7 @@ import { and, eq, or } from "drizzle-orm";
 import { db } from ".";
 import {
 	Friend,
+	FriendDetails,
 	friends,
 	FriendStatusType,
 	RefreshToken,
@@ -37,6 +38,11 @@ export async function addUserToDb(user: User): Promise<UserRecord | undefined> {
 
 export async function getUserByEmail(email: string): Promise<UserRecord | undefined> {
 	const [result] = await db.select().from(users).where(eq(users.email, email));
+	return result;
+}
+
+export async function getUserById(id: string): Promise<UserRecord | undefined> {
+	const [result] = await db.select().from(users).where(eq(users.id, id));
 	return result;
 }
 
@@ -123,6 +129,22 @@ export async function requestFriendInDb(user: string, other: string): Promise<Fr
 		})
 		.onConflictDoNothing()
 		.returning();
+	return result;
+}
+
+export async function getFriendsInDb(user: string): Promise<FriendDetails[] | undefined> {
+	//check if other user has sent a friend req so we can know if status should be requested or accepted
+	const result: FriendDetails[] = await db
+		.select({
+			userId: friends.friendId,
+			name: users.name,
+			updatedAt: friends.updatedAt,
+			status: friends.status,
+		})
+		.from(friends)
+		.innerJoin(users, eq(friends.friendId, users.id))
+		.where(and(eq(friends.userId, user), eq(friends.status, "accepted")));
+
 	return result;
 }
 

@@ -5,6 +5,8 @@ import {
 	handlerCreateSchedule,
 	handlerCreateUser,
 	handlerError,
+	handlerGetFriends,
+	handlerGetProfile,
 	handlerGetScheduleByUserId,
 	handlerGetUsers,
 	handlerLogin,
@@ -44,10 +46,12 @@ app.post("/auth/logout", middlewareAuthentication, handlerLogout);
 //TODO this should require some kind of query to filter users by or search for users to friend request
 app.get("/api/users", handlerGetUsers);
 app.post("/api/users", handlerCreateUser);
+app.get("/api/profile", middlewareAuthentication, handlerGetProfile);
 app.get("/api/users/overlap", middlewareAuthentication, handlerCompareUsersSchedules);
 
 //friends
 app.post("/api/friends/", middlewareAuthentication, handlerRequestFriend);
+app.get("/api/friends/", middlewareAuthentication, handlerGetFriends);
 
 //schedules
 app.post("/api/schedules", middlewareAuthentication, handlerCreateSchedule);
