@@ -4,8 +4,10 @@ import {
 	handlerCompareUsersSchedules,
 	handlerCreateSchedule,
 	handlerCreateUser,
+	handlerDeleteSchedule,
 	handlerError,
 	handlerGetFriends,
+	handlerGetFriendsOverlap,
 	handlerGetProfile,
 	handlerGetScheduleByUserId,
 	handlerGetUsers,
@@ -52,9 +54,11 @@ app.get("/api/users/overlap", middlewareAuthentication, handlerCompareUsersSched
 //friends
 app.post("/api/friends/", middlewareAuthentication, handlerRequestFriend);
 app.get("/api/friends/", middlewareAuthentication, handlerGetFriends);
+app.get("/api/friends/overlap", middlewareAuthentication, handlerGetFriendsOverlap); //uses start and end date query params
 
 //schedules
 app.post("/api/schedules", middlewareAuthentication, handlerCreateSchedule);
+app.delete("/api/schedules", middlewareAuthentication, handlerDeleteSchedule);
 // validates user cred and that user is friends with user before showing the schedule
 app.get(
 	"/api/schedules/:userId",

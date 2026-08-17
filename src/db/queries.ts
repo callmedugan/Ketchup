@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { db } from ".";
 import {
 	Friend,
@@ -14,7 +14,6 @@ import {
 	UserRecord,
 	users,
 } from "./schema";
-import { AwsDataApiPgDatabase } from "drizzle-orm/aws-data-api/pg";
 
 /* ========================================================================= */
 //                        all
@@ -58,6 +57,18 @@ export async function getAllUsersFromDb(): Promise<UserRecord[] | undefined> {
 
 export async function addScheduleToDb(schedule: Schedule): Promise<ScheduleRecord | undefined> {
 	const [result] = await db.insert(schedules).values(schedule).onConflictDoNothing().returning();
+	return result;
+}
+
+//will only return if user owns the schedule
+export async function deleteScheduleFromDb(
+	requestingUser: string,
+	id: string,
+): Promise<ScheduleRecord | undefined> {
+	const [result] = await db
+		.delete(schedules)
+		.where(and(eq(schedules.userId, requestingUser), eq(schedules.id, id)))
+		.returning();
 	return result;
 }
 
@@ -157,4 +168,36 @@ export async function checkUsersAreFriendsFromDb(user1: string, user2: string): 
 		);
 
 	return result !== undefined;
+}
+
+export type FriendScheduleRecord = {
+	friendId: string;
+	friendName: string;
+} & ScheduleRecord;
+
+export async function getAllFriendSchedules(userId: string): Promise<FriendScheduleRecord[]> {
+	const result = await db
+		.select({
+			id: schedules.id,
+			userId: schedules.userId,
+			startTime: schedules.startTime,
+			endTime: schedules.endTime,
+			repeatType: schedules.repeatType,
+			createdAt: schedules.createdAt,
+			updatedAt: schedules.updatedAt,
+			friendId: users.id,
+			friendName: users.name,
+		})
+		.from(schedules)
+		.innerJoin(
+			friends,
+			and(
+				eq(schedules.userId, friends.friendId),
+				eq(friends.userId, userId),
+				eq(friends.status, "accepted"),
+			),
+		)
+		.innerJoin(users, eq(users.id, friends.friendId));
+
+	return result;
 }

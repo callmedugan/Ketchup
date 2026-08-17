@@ -28,6 +28,7 @@
     "argon2": "^0.45.1",
     "bootstrap": "^5.3.8",
     "cors": "^2.8.6",
+    "date-fns": "^4.4.0",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",

@@ -18,6 +18,9 @@ import {
 	addUserToDb,
 	createRefreshToken,
 	deleteAll as deleteDb,
+	deleteScheduleFromDb,
+	FriendScheduleRecord,
+	getAllFriendSchedules,
 	getAllUsersFromDb,
 	getFriendsInDb,
 	getRefreshTokenUser,
@@ -28,6 +31,8 @@ import {
 	revokeToken,
 } from "./db/queries";
 import { checkPasswordHash, hashPassword, makeJWT, makeRefreshToken, validateJWT } from "./db/auth";
+import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./data/constants";
+import { getDate, getDay, getHours, getMinutes, isSameDay, set } from "date-fns";
 
 export function handlerApp(req: Request, res: Response) {
 	return res.status(200).json({ message: "Hello from TypeScript & Express!" });
@@ -51,15 +56,18 @@ export async function handlerCreateUser(req: Request, res: Response) {
 		throw new BadRequestError("Password cannot be blank");
 
 	//validate password
-	if (parse.password.length < 6) throw new BadRequestError("Password must be 6 characters or more");
-	if (parse.password.length > 128)
-		throw new BadRequestError("Password must be 128 characters or less");
+	if (parse.password.length < PASSWORD_MIN_LENGTH)
+		throw new BadRequestError(`Password must be ${PASSWORD_MIN_LENGTH} characters or more`);
+	if (parse.password.length > PASSWORD_MAX_LENGTH)
+		throw new BadRequestError(`Password must be ${PASSWORD_MAX_LENGTH} characters or less`);
 	const hashedPassword = await hashPassword(parse.password);
 
 	//validate email
 	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parse.email))
 		throw new BadRequestError("Email is invalid format");
 	const cleanEmail = parse.email.trim().toLowerCase();
+	if (cleanEmail.length > EMAIL_MAX_LENGTH)
+		throw new BadRequestError(`Email must be ${EMAIL_MAX_LENGTH} characters or less`);
 	const userExists = await getUserByEmail(cleanEmail);
 	if (userExists != undefined) throw new ConflictError("Email has an existing account");
 
@@ -227,14 +235,13 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	const parse: Shape = req.body;
 
 	//handle the parsed data
-	if (!userId || userId === "") throw new BadRequestError("userId cannot be blank");
 	if (!parse.startTime) throw new BadRequestError("Start Time cannot be blank");
 	if (!parse.endTime) throw new BadRequestError("End Time cannot be blank");
 	if (!isValidRepeatType(parse.repeatType)) throw new BadRequestError("Invalid repeat type");
 
 	//result
 	const result = await addScheduleToDb({
-		userId: userId,
+		userId: userId!,
 		repeatType: parse.repeatType,
 		startTime: new Date(parse.startTime),
 		endTime: new Date(parse.endTime),
@@ -243,6 +250,37 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 
 	//return 201 status with password omitted
 	res.status(201).send({
+		id: result.id,
+		repeatType: result.repeatType,
+		startTime: result.startTime,
+		endTime: result.endTime,
+		createdAt: result.createdAt,
+		updatedAt: result.updatedAt,
+		userId: result.userId,
+	});
+}
+
+export async function handlerDeleteSchedule(req: Request, res: Response) {
+	//validated user
+	const userId = req.userId;
+
+	//define shape
+	type Shape = {
+		id: string;
+	};
+
+	//get parsed body
+	const parse: Shape = req.body;
+
+	//handle the parsed data
+	if (!parse.id || parse.id === "") throw new BadRequestError("Id missing or blank");
+
+	//result - better to call a 404 if user is not owner so that it does not reveal if it exists to someone not authorized
+	const result = await deleteScheduleFromDb(userId!, parse.id);
+	if (result == undefined) throw new NotFoundError("Schedule not found");
+
+	//return 204 for successful delete
+	res.status(204).send({
 		id: result.id,
 		repeatType: result.repeatType,
 		startTime: result.startTime,
@@ -427,6 +465,67 @@ export async function handlerGetFriends(req: Request, res: Response) {
 	res.status(200).send(friendsJson);
 }
 
+export async function handlerGetFriendsOverlap(req: Request, res: Response) {
+	//query params
+	const { start, end } = req.query;
+
+	//validate params
+	if (typeof start !== "string" || typeof end !== "string")
+		throw new BadRequestError("start and end query parameters are required");
+
+	const startDate = new Date(start);
+	const endDate = new Date(end);
+
+	if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()))
+		throw new BadRequestError("Invalid start or end date");
+
+	//validate user is auth first - will throw if failed auth
+	const userId = req.userId;
+
+	//call db for user
+	const userSchedule = await getScheduleByUserFromDb(userId!);
+	if (userSchedule == undefined)
+		throw new Error("User has no schedule or failed to retrieve schedules");
+
+	//call for friends
+	const friendSchedules = await getAllFriendSchedules(userId!);
+	if (friendSchedules == undefined)
+		throw new Error(
+			"User has no friends, friends have no schedules, or failed to retrieve friends schedules",
+		);
+
+	//loop through all schedule combinations and find overlaps
+	const overlapsInDateRange: FriendScheduleRecord[] = [];
+	for (const a of userSchedule) {
+		for (const b of friendSchedules) {
+			//gets time range of overlap
+			const overlap = getTimeOverlapRepeating(
+				{ start: a.startTime, end: a.endTime, repeatType: a.repeatType },
+				{ start: b.startTime, end: b.endTime, repeatType: b.repeatType },
+			);
+
+			//check
+			if (overlap == undefined) continue;
+			//check if between query range?
+			//later
+			overlapsInDateRange.push({
+				id: b.id,
+				userId: b.userId,
+				startTime: overlap.start,
+				endTime: overlap.end,
+				repeatType: overlap.repeatType,
+				createdAt: b.createdAt,
+				updatedAt: b.updatedAt,
+				friendId: b.friendId,
+				friendName: b.friendName,
+			});
+		}
+	}
+
+	//return 200 status with data
+	res.status(200).send(overlapsInDateRange);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 //Other
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -496,6 +595,64 @@ function getTimeOverlap(a: TimeRange, b: TimeRange): TimeRange | undefined {
 			start: new Date(maxStart),
 			end: new Date(minEnd),
 		};
+		return result;
+	}
+
+	return undefined;
+}
+
+type TimeRangeRepeating = {
+	start: Date;
+	end: Date;
+	repeatType: ScheduleRepeatType;
+};
+
+function _dateToMinutes(date: Date) {
+	return getHours(date) * 60 + getMinutes(date);
+}
+function _minutesToDate(minutes: number, date: Date) {
+	return set(date, {
+		hours: Math.floor(minutes / 60),
+		minutes: minutes % 60,
+		seconds: 0,
+		milliseconds: 0,
+	});
+}
+
+function getTimeOverlapRepeating(
+	a: TimeRangeRepeating,
+	b: TimeRangeRepeating,
+): TimeRangeRepeating | undefined {
+	//check to see if repeat types can overlap - only need to make sure once and weekly times
+	//fall on the same day of the week to be eligible
+	//daily for either will automatically be eligible
+	if (a.repeatType !== "daily" && b.repeatType !== "daily" && getDay(a.start) !== getDay(b.start)) {
+		return undefined;
+	}
+
+	//validate date strings
+	const aStart = _dateToMinutes(a.start);
+	const aEnd = _dateToMinutes(a.end);
+	const bStart = _dateToMinutes(b.start);
+	const bEnd = _dateToMinutes(b.end);
+
+	// find the latest start time and earliest end time
+	const maxStart = Math.max(aStart, bStart);
+	const minEnd = Math.min(aEnd, bEnd);
+
+	// check if the start happens before the end
+	if (maxStart < minEnd) {
+		//get repeat type as the "lowest" repeat of either
+		let repeat: ScheduleRepeatType = "once";
+		if (a.repeatType === "daily" || b.repeatType === "daily") repeat = "daily";
+		else if (a.repeatType === "weekly" || b.repeatType === "weekly") repeat = "weekly";
+		//result
+		const result: TimeRangeRepeating = {
+			start: _minutesToDate(maxStart, new Date()),
+			end: _minutesToDate(minEnd, new Date()),
+			repeatType: repeat,
+		};
+		console.log(result);
 		return result;
 	}
 

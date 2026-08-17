@@ -1,8 +1,10 @@
 import { primaryKey, uuid, pgTable, text, timestamp, varchar, pgEnum } from "drizzle-orm/pg-core";
+import { BIO_MAX_LENGTH, EMAIL_MAX_LENGTH } from "../data/constants";
 
 /* ========================================================================= */
 //                        users
 /* ========================================================================= */
+// TODO: add username, bio, photo(s), interests(seperate table), timezone, location, bucket list (seperate)
 
 export type User = typeof users.$inferInsert;
 export type Schedule = typeof schedules.$inferInsert;
@@ -14,8 +16,9 @@ export const users = pgTable("users", {
 		.notNull()
 		.defaultNow()
 		.$onUpdate(() => new Date()),
-	email: varchar("email", { length: 256 }).unique().notNull(),
+	email: varchar("email", { length: EMAIL_MAX_LENGTH }).unique().notNull(),
 	hashedPassword: varchar("hashed_password").notNull().default("unset"),
+	//bio: varchar("bio", { length: BIO_MAX_LENGTH }).default(""),
 });
 
 export type UserRecord = typeof users.$inferSelect;
@@ -23,6 +26,7 @@ export type UserRecord = typeof users.$inferSelect;
 /* ========================================================================= */
 //                        schedules
 /* ========================================================================= */
+// TODO: add color, matched status? (seperate table for a sepcific overlap),
 
 export type ScheduleRecord = typeof schedules.$inferSelect;
 
