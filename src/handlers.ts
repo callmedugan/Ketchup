@@ -1,18 +1,6 @@
-import {
-	Friend,
-	FriendDetails,
-	isValidRepeatType,
-	Schedule,
-	ScheduleRepeatType,
-} from "./db/schema";
+import { Friend, FriendDetails, isValidRepeatType, Schedule, ScheduleRepeatType } from "./db/schema";
 import express, { Request, Response, NextFunction } from "express";
-import {
-	BadRequestError,
-	NotFoundError,
-	ForbiddenError,
-	UnauthorizedError,
-	ConflictError,
-} from "./error";
+import { BadRequestError, NotFoundError, ForbiddenError, UnauthorizedError, ConflictError } from "./error";
 import {
 	addScheduleToDb,
 	addUserToDb,
@@ -52,22 +40,17 @@ export async function handlerCreateUser(req: Request, res: Response) {
 	//handle the parsed data
 	if (!parse.email || parse.email === "") throw new BadRequestError("Email cannot be blank");
 	if (!parse.name || parse.name === "") throw new BadRequestError("Name cannot be blank");
-	if (!parse.password || parse.password === "")
-		throw new BadRequestError("Password cannot be blank");
+	if (!parse.password || parse.password === "") throw new BadRequestError("Password cannot be blank");
 
 	//validate password
-	if (parse.password.length < PASSWORD_MIN_LENGTH)
-		throw new BadRequestError(`Password must be ${PASSWORD_MIN_LENGTH} characters or more`);
-	if (parse.password.length > PASSWORD_MAX_LENGTH)
-		throw new BadRequestError(`Password must be ${PASSWORD_MAX_LENGTH} characters or less`);
+	if (parse.password.length < PASSWORD_MIN_LENGTH) throw new BadRequestError(`Password must be ${PASSWORD_MIN_LENGTH} characters or more`);
+	if (parse.password.length > PASSWORD_MAX_LENGTH) throw new BadRequestError(`Password must be ${PASSWORD_MAX_LENGTH} characters or less`);
 	const hashedPassword = await hashPassword(parse.password);
 
 	//validate email
-	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parse.email))
-		throw new BadRequestError("Email is invalid format");
+	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parse.email)) throw new BadRequestError("Email is invalid format");
 	const cleanEmail = parse.email.trim().toLowerCase();
-	if (cleanEmail.length > EMAIL_MAX_LENGTH)
-		throw new BadRequestError(`Email must be ${EMAIL_MAX_LENGTH} characters or less`);
+	if (cleanEmail.length > EMAIL_MAX_LENGTH) throw new BadRequestError(`Email must be ${EMAIL_MAX_LENGTH} characters or less`);
 	const userExists = await getUserByEmail(cleanEmail);
 	if (userExists != undefined) throw new ConflictError("Email has an existing account");
 
@@ -103,11 +86,11 @@ export async function handlerLogin(req: Request, res: Response) {
 
 	//handle the parsed data
 	if (!parse.email || parse.email === "") throw new BadRequestError("Email cannot be blank");
-	if (!parse.password || parse.password === "")
-		throw new BadRequestError("Password cannot be blank");
+	if (!parse.password || parse.password === "") throw new BadRequestError("Password cannot be blank");
 
 	//hash provided password
-	const user = await getUserByEmail(parse.email);
+	const cleanEmail = parse.email.trim().toLowerCase();
+	const user = await getUserByEmail(cleanEmail);
 	if (user == undefined || user.hashedPassword == undefined || user.id == undefined) {
 		throw new UnauthorizedError("Incorrect email or password");
 	}
@@ -142,6 +125,7 @@ export async function handlerLogin(req: Request, res: Response) {
 		updatedAt: user.updatedAt,
 		token: token,
 		refreshToken: refreshTokenString,
+		bio: user.bio,
 	});
 }
 
@@ -149,8 +133,7 @@ export async function handlerRefresh(req: Request, res: Response) {
 	//get bearer token from auth header in req
 	const header = req.get("Authorization");
 	const token = header && header.split(" ")[1];
-	if (token == undefined)
-		throw new UnauthorizedError("failed to get bearer token from req headers");
+	if (token == undefined) throw new UnauthorizedError("failed to get bearer token from req headers");
 
 	//get token that was provided and look up the refresh token to see if valid and not expired
 	const tokenUser = await getRefreshTokenUser(token);
@@ -180,21 +163,17 @@ export async function handlerLogout(req: Request, res: Response) {
 }
 
 ///need to add filters - mainly used for finding friends?
+//removing sensitive info
 export async function handlerGetUsers(req: Request, res: Response) {
 	const users = await getAllUsersFromDb();
-	if (users == undefined)
-		throw new Error("something went wrong with getting user or user does not exist");
+	if (users == undefined) throw new Error("something went wrong with getting user or user does not exist");
 
 	const result = [];
 	//build result structure
 	for (const u of users) {
 		result.push({
 			id: u.id,
-			createdAt: u.createdAt,
-			updatedAt: u.updatedAt,
 			name: u.name,
-			email: u.email,
-			hashPassword: u.hashedPassword,
 		});
 	}
 	//success
@@ -207,8 +186,7 @@ export async function handlerGetProfile(req: Request, res: Response) {
 	const userId = req.userId;
 
 	const result = await getUserById(userId!);
-	if (result == undefined)
-		throw new Error("something went wrong with getting user or user does not exist");
+	if (result == undefined) throw new Error("something went wrong with getting user or user does not exist");
 
 	//success
 	res.status(200).send({
@@ -297,13 +275,11 @@ export async function handlerGetScheduleByUserId(req: Request, res: Response) {
 
 	//get user id from passed param
 	const lookupUserId = req.params.userId;
-	if (!lookupUserId || typeof lookupUserId !== "string")
-		throw new BadRequestError("userId cannot be blank");
+	if (!lookupUserId || typeof lookupUserId !== "string") throw new BadRequestError("userId cannot be blank");
 
 	//call db
 	const schedules = await getScheduleByUserFromDb(lookupUserId);
-	if (schedules == undefined)
-		throw new Error("user has no schedule or failed to retrieve schedules");
+	if (schedules == undefined) throw new Error("user has no schedule or failed to retrieve schedules");
 
 	const result = [];
 	//build result structure
@@ -342,11 +318,9 @@ export async function handlerCompareUsersSchedules(req: Request, res: Response) 
 
 	//call db
 	const user1Schedules = await getScheduleByUserFromDb(userId1);
-	if (user1Schedules == undefined)
-		throw new Error("user 1 has no schedule or failed to retrieve schedules");
+	if (user1Schedules == undefined) throw new Error("user 1 has no schedule or failed to retrieve schedules");
 	const user2Schedules = await getScheduleByUserFromDb(parse.userId2);
-	if (user2Schedules == undefined)
-		throw new Error("user 2 has no schedule or failed to retrieve schedules");
+	if (user2Schedules == undefined) throw new Error("user 2 has no schedule or failed to retrieve schedules");
 
 	const allOverlaps: Schedule[] = [];
 
@@ -429,8 +403,7 @@ export async function handlerRequestFriend(req: Request, res: Response) {
 
 	//handle the parsed data
 	if (!userId || userId === "") throw new BadRequestError("userId cannot be blank");
-	if (!parse.friendId || parse.friendId === "")
-		throw new BadRequestError("friend id cannot be blank");
+	if (!parse.friendId || parse.friendId === "") throw new BadRequestError("friend id cannot be blank");
 
 	//result
 	const result = await requestFriendInDb(userId, parse.friendId);
@@ -466,33 +439,29 @@ export async function handlerGetFriends(req: Request, res: Response) {
 }
 
 export async function handlerGetFriendsOverlap(req: Request, res: Response) {
-	//query params
-	const { start, end } = req.query;
+	// //query params
+	// const { start, end } = req.query;
 
-	//validate params
-	if (typeof start !== "string" || typeof end !== "string")
-		throw new BadRequestError("start and end query parameters are required");
+	// //validate params
+	// if (typeof start !== "string" || typeof end !== "string")
+	// 	throw new BadRequestError("start and end query parameters are required");
 
-	const startDate = new Date(start);
-	const endDate = new Date(end);
+	// const startDate = new Date(start);
+	// const endDate = new Date(end);
 
-	if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()))
-		throw new BadRequestError("Invalid start or end date");
+	// if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()))
+	// 	throw new BadRequestError("Invalid start or end date");
 
 	//validate user is auth first - will throw if failed auth
 	const userId = req.userId;
 
 	//call db for user
 	const userSchedule = await getScheduleByUserFromDb(userId!);
-	if (userSchedule == undefined)
-		throw new Error("User has no schedule or failed to retrieve schedules");
+	if (userSchedule == undefined) throw new Error("User has no schedule or failed to retrieve schedules");
 
 	//call for friends
 	const friendSchedules = await getAllFriendSchedules(userId!);
-	if (friendSchedules == undefined)
-		throw new Error(
-			"User has no friends, friends have no schedules, or failed to retrieve friends schedules",
-		);
+	if (friendSchedules == undefined) throw new Error("User has no friends, friends have no schedules, or failed to retrieve friends schedules");
 
 	//loop through all schedule combinations and find overlaps
 	const overlapsInDateRange: FriendScheduleRecord[] = [];
@@ -508,6 +477,7 @@ export async function handlerGetFriendsOverlap(req: Request, res: Response) {
 			if (overlap == undefined) continue;
 			//check if between query range?
 			//later
+
 			overlapsInDateRange.push({
 				id: b.id,
 				userId: b.userId,
@@ -518,6 +488,7 @@ export async function handlerGetFriendsOverlap(req: Request, res: Response) {
 				updatedAt: b.updatedAt,
 				friendId: b.friendId,
 				friendName: b.friendName,
+				userScheduleIdMatched: a.id,
 			});
 		}
 	}
@@ -533,10 +504,7 @@ export function getScheduleOverlap(first: Schedule, second: Schedule): Schedule 
 	//check for overlap first though because schedules are stored as an array of dates that are all the same time
 	//so if there is no overlap, then no need to check the dates
 	//looking for start to be less than end if there is an overlap
-	const timeOverlap = getTimeOverlap(
-		{ start: first.startTime, end: first.endTime },
-		{ start: second.startTime, end: second.endTime },
-	);
+	const timeOverlap = getTimeOverlap({ start: first.startTime, end: first.endTime }, { start: second.startTime, end: second.endTime });
 	if (timeOverlap == undefined) return undefined;
 
 	const dateOverlaps: string[] = [];
@@ -619,10 +587,7 @@ function _minutesToDate(minutes: number, date: Date) {
 	});
 }
 
-function getTimeOverlapRepeating(
-	a: TimeRangeRepeating,
-	b: TimeRangeRepeating,
-): TimeRangeRepeating | undefined {
+function getTimeOverlapRepeating(a: TimeRangeRepeating, b: TimeRangeRepeating): TimeRangeRepeating | undefined {
 	//check to see if repeat types can overlap - only need to make sure once and weekly times
 	//fall on the same day of the week to be eligible
 	//daily for either will automatically be eligible

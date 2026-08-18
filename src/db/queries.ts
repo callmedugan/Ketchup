@@ -173,6 +173,7 @@ export async function checkUsersAreFriendsFromDb(user1: string, user2: string): 
 export type FriendScheduleRecord = {
 	friendId: string;
 	friendName: string;
+	userScheduleIdMatched?: string | null;
 } & ScheduleRecord;
 
 export async function getAllFriendSchedules(userId: string): Promise<FriendScheduleRecord[]> {

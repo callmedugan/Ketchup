@@ -4,7 +4,7 @@ import { BIO_MAX_LENGTH, EMAIL_MAX_LENGTH } from "../data/constants";
 /* ========================================================================= */
 //                        users
 /* ========================================================================= */
-// TODO: add username, bio, photo(s), interests(seperate table), timezone, location, bucket list (seperate)
+// TODO: photo(s), interests(seperate table), timezone, location, bucket list (seperate)
 
 export type User = typeof users.$inferInsert;
 export type Schedule = typeof schedules.$inferInsert;
@@ -18,7 +18,8 @@ export const users = pgTable("users", {
 		.$onUpdate(() => new Date()),
 	email: varchar("email", { length: EMAIL_MAX_LENGTH }).unique().notNull(),
 	hashedPassword: varchar("hashed_password").notNull().default("unset"),
-	//bio: varchar("bio", { length: BIO_MAX_LENGTH }).default(""),
+	bio: varchar("bio", { length: BIO_MAX_LENGTH }).notNull().default(""),
+	//timezone: text("timezone").notNull().default("America/Los_Angeles"),
 });
 
 export type UserRecord = typeof users.$inferSelect;
