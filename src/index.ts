@@ -9,8 +9,9 @@ import {
 	handlerError,
 	handlerGetFriends,
 	handlerGetFriendsOverlap,
+	handlerGetPlans,
 	handlerGetProfile,
-	handlerGetScheduleByUserId,
+	handlerGetSchedules,
 	handlerGetUsers,
 	handlerLogin,
 	handlerLogout,
@@ -47,7 +48,7 @@ app.post("/auth/refresh", handlerRefresh);
 app.post("/auth/logout", middlewareAuthentication, handlerLogout);
 
 //TODO this should require some kind of query to filter users by or search for users to friend request
-app.get("/api/users", handlerGetUsers);
+app.get("/api/users", middlewareAuthentication, handlerGetUsers);
 app.post("/api/users", handlerCreateUser);
 app.get("/api/profile", middlewareAuthentication, handlerGetProfile);
 app.get("/api/users/overlap", middlewareAuthentication, handlerCompareUsersSchedules);
@@ -61,9 +62,10 @@ app.get("/api/friends/overlap", middlewareAuthentication, handlerGetFriendsOverl
 app.post("/api/schedules", middlewareAuthentication, handlerCreateSchedule);
 app.delete("/api/schedules", middlewareAuthentication, handlerDeleteSchedule);
 // validates user cred and that user is friends with user before showing the schedule (prob can remove since i wont need)
-app.get("/api/schedules/:userId", middlewareAuthentication, middlewareAuthorizedViewer, handlerGetScheduleByUserId);
+app.get("/api/schedules/:userId", middlewareAuthentication, middlewareAuthorizedViewer, handlerGetSchedules);
 
 //plans
+app.get("/api/plans", middlewareAuthentication, handlerGetPlans);
 app.post("/api/plans", middlewareAuthentication, handlerCreatePlans);
 
 /* ========================================================================= */

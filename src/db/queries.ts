@@ -1,4 +1,4 @@
-import { and, eq, inArray, or } from "drizzle-orm";
+import { and, eq, inArray, not, or } from "drizzle-orm";
 import { db } from ".";
 import {
 	Friend,
@@ -14,9 +14,11 @@ import {
 	ScheduleRecord,
 	schedules,
 	User,
+	UserPublic,
 	UserRecord,
 	users,
 } from "./schema";
+import { BadRequestError, NotFoundError } from "../error";
 
 /* ========================================================================= */
 //                        all
@@ -48,8 +50,18 @@ export async function getUserById(id: string): Promise<UserRecord | undefined> {
 	return result;
 }
 
-//need to add filters here - mainly for finding friends?
-export async function getAllUsersFromDb(): Promise<UserRecord[]> {
+//if a user is provided, returns all except that user (for searching for friends)
+export async function getAllUsersFromDb(userId?: string): Promise<UserPublic[]> {
+	if (userId) {
+		const result = await db
+			.select({
+				id: users.id,
+				name: users.name,
+			})
+			.from(users)
+			.where(not(eq(users.id, userId)));
+		return result;
+	}
 	const result = await db.select().from(users);
 	return result;
 }
@@ -106,24 +118,71 @@ export async function revokeToken(tokenIdString: string): Promise<boolean> {
 //                        friends
 /* ========================================================================= */
 
-export async function requestFriendInDb(user: string, other: string): Promise<Friend | undefined> {
-	//check if other user has sent a friend req so we can know if status should be requested or accepted
-	const [requestReceived] = await db.select().from(friends).where(eq(friends.friendId, user));
-
-	//both requested
-	const isMutual = requestReceived != undefined && requestReceived?.status === "requested";
-	if (isMutual) {
-		//update other user
-		const [otherUserResult] = await db.update(friends).set({ status: "accepted" }).where(eq(friends.friendId, user)).returning();
-	}
-
-	//just create entry for the user if this is initial request between the 2 users
+export async function blockUserInDb(userId: string, friendId: string): Promise<Friend | undefined> {
 	const [result] = await db
 		.insert(friends)
 		.values({
-			userId: user,
-			status: isMutual ? "accepted" : "requested",
-			friendId: other,
+			userId,
+			friendId,
+			status: "blocked",
+		})
+		.onConflictDoUpdate({
+			target: [friends.userId, friends.friendId],
+			set: {
+				status: "blocked",
+			},
+		})
+		.returning();
+	return result;
+}
+
+export async function requestFriendInDb(userId: string, friendId: string): Promise<Friend | undefined> {
+	//check if other user has sent a friend req so we can know if status should be requested or accepted
+	const [requestReceived] = await db
+		.select()
+		.from(friends)
+		.where(and(eq(friends.userId, friendId), eq(friends.friendId, userId)));
+	if (requestReceived?.status === "accepted") throw new BadRequestError("User is already friends with other user");
+	if (requestReceived?.status === "blocked") throw new NotFoundError("Could not find other user");
+
+	//if other user requested then update both records as accepted
+	if (requestReceived !== undefined && requestReceived.status === "requested") {
+		return await db.transaction(async (tx) => {
+			// update request received
+			await tx
+				.update(friends)
+				.set({
+					status: "accepted",
+				})
+				.where(and(eq(friends.userId, friendId), eq(friends.friendId, userId)));
+
+			// create/update user
+			const [result] = await tx
+				.insert(friends)
+				.values({
+					userId,
+					friendId,
+					status: "accepted",
+				})
+				.onConflictDoUpdate({
+					target: [friends.userId, friends.friendId],
+					set: {
+						status: "accepted",
+					},
+				})
+				.returning();
+
+			return result;
+		});
+	}
+
+	//if no request received then just create one sided requested entry for default
+	const [result] = await db
+		.insert(friends)
+		.values({
+			userId: userId,
+			status: "requested",
+			friendId: friendId,
 		})
 		.onConflictDoNothing()
 		.returning();
@@ -131,8 +190,7 @@ export async function requestFriendInDb(user: string, other: string): Promise<Fr
 }
 
 export async function getFriendsInDb(user: string): Promise<FriendDetails[]> {
-	//check if other user has sent a friend req so we can know if status should be requested or accepted
-	const result: FriendDetails[] = await db
+	const result = await db
 		.select({
 			userId: friends.friendId,
 			name: users.name,
@@ -141,7 +199,7 @@ export async function getFriendsInDb(user: string): Promise<FriendDetails[]> {
 		})
 		.from(friends)
 		.innerJoin(users, eq(friends.friendId, users.id))
-		.where(and(eq(friends.userId, user), eq(friends.status, "accepted")));
+		.where(eq(friends.userId, user));
 
 	return result;
 }
@@ -187,5 +245,30 @@ export async function getAllFriendSchedules(userId: string): Promise<FriendSched
 
 export async function addPlansToDb(plan: Plan): Promise<PlanRecord | undefined> {
 	const [result] = await db.insert(plans).values(plan).onConflictDoNothing().returning();
+	return result;
+}
+
+export type PlanRecordDetails = PlanRecord & {
+	friendName: string;
+};
+export async function getPlansFromDb(userId: string): Promise<PlanRecordDetails[]> {
+	const result = await db
+		.select({
+			id: plans.id,
+			creatorId: plans.creatorId,
+			friendId: plans.friendId,
+			createdAt: plans.createdAt,
+			updatedAt: plans.updatedAt,
+			status: plans.status,
+			title: plans.title,
+			comments: plans.comments,
+			meetTime: plans.meetTime,
+
+			friendName: users.name,
+		})
+		.from(plans)
+		.innerJoin(users, eq(plans.friendId, users.id))
+		.where(eq(plans.creatorId, userId));
+
 	return result;
 }

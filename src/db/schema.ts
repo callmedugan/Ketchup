@@ -1,5 +1,6 @@
 import { primaryKey, uuid, pgTable, text, timestamp, varchar, pgEnum } from "drizzle-orm/pg-core";
 import { BIO_MAX_LENGTH, COMMENTS_MAX_LENGTH, EMAIL_MAX_LENGTH, TITLE_MAX_LENGTH } from "../data/constants";
+import z from "zod";
 
 /* ========================================================================= */
 //                        users
@@ -7,7 +8,9 @@ import { BIO_MAX_LENGTH, COMMENTS_MAX_LENGTH, EMAIL_MAX_LENGTH, TITLE_MAX_LENGTH
 // TODO: photo(s), interests(seperate table), timezone, location, bucket list (seperate)
 
 export type User = typeof users.$inferInsert;
-export type Schedule = typeof schedules.$inferInsert;
+export type UserRecord = typeof users.$inferSelect;
+export type UserPublic = Pick<typeof users.$inferSelect, "id" | "name">;
+
 export const users = pgTable("users", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	name: text("name").notNull(),
@@ -22,14 +25,13 @@ export const users = pgTable("users", {
 	//timezone: text("timezone").notNull().default("America/Los_Angeles"),
 });
 
-export type UserRecord = typeof users.$inferSelect;
-
 /* ========================================================================= */
 //                        schedules
 /* ========================================================================= */
 // TODO: add color, matched status? (seperate table for a sepcific overlap),
 
 export type ScheduleRecord = typeof schedules.$inferSelect;
+export type Schedule = typeof schedules.$inferInsert;
 
 export const scheduleRepeatEnum = pgEnum("repeat_type", ["once", "daily", "weekly"]);
 export const schedules = pgTable("schedules", {
@@ -78,7 +80,9 @@ export const refreshTokens = pgTable("refresh_tokens", {
 /* ========================================================================= */
 //                        friends
 /* ========================================================================= */
-
+//zod
+export const FriendStatusSchema = z.enum(["requested", "accepted", "blocked"]);
+//drizzle
 export const friendStatusEnum = pgEnum("friend_status", ["requested", "accepted", "blocked"]);
 export type Friend = typeof friends.$inferInsert;
 export type FriendDetails = {
@@ -87,24 +91,33 @@ export type FriendDetails = {
 	updatedAt: typeof friends.$inferSelect.updatedAt;
 	status: typeof friends.$inferSelect.status;
 };
+//actual type
+export type FriendStatusType = z.infer<typeof FriendStatusSchema>;
 
-export const friends = pgTable("friends", {
-	userId: uuid("user_id")
-		.notNull()
-		.references(() => users.id, { onDelete: "cascade" })
-		.primaryKey(),
-	friendId: uuid("friend_id")
-		.notNull()
-		.references(() => users.id, { onDelete: "cascade" }),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-	updatedAt: timestamp("updated_at")
-		.notNull()
-		.defaultNow()
-		.$onUpdate(() => new Date()),
-	status: friendStatusEnum("status").notNull(),
-});
+export const friends = pgTable(
+	"friends",
+	{
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		friendId: uuid("friend_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at")
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+		status: friendStatusEnum("status").notNull(),
+	},
+	//make composite primary key for user/friend relationship
+	(table) => ({
+		pk: primaryKey({
+			columns: [table.userId, table.friendId],
+		}),
+	}),
+);
 
-export type FriendStatusType = "requested" | "accepted" | "blocked";
 export function isValidFriendStatus(obj: any): obj is FriendStatusType {
 	if (!obj || typeof obj !== "string") return false;
 

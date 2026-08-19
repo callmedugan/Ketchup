@@ -1,4 +1,4 @@
-import { Friend, FriendDetails, isValidRepeatType, Plan, Schedule, ScheduleRecord, ScheduleRepeatType } from "./db/schema";
+import { Friend, FriendDetails, FriendStatusSchema, isValidRepeatType, Plan, Schedule, ScheduleRepeatType } from "./db/schema";
 import express, { Request, Response, NextFunction } from "express";
 import { BadRequestError, NotFoundError, ForbiddenError, UnauthorizedError, ConflictError } from "./error";
 import {
@@ -13,6 +13,7 @@ import {
 	getAllFriendSchedules,
 	getAllUsersFromDb,
 	getFriendsInDb,
+	getPlansFromDb,
 	getRefreshTokenUser,
 	getScheduleByUserFromDb,
 	getUserByEmail,
@@ -20,9 +21,9 @@ import {
 	requestFriendInDb,
 	revokeToken,
 } from "./db/queries";
-import { checkPasswordHash, hashPassword, makeJWT, makeRefreshToken, validateJWT } from "./db/auth";
+import { checkPasswordHash, hashPassword, makeJWT, makeRefreshToken } from "./db/auth";
 import { COMMENTS_MAX_LENGTH, EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, TITLE_MAX_LENGTH } from "./data/constants";
-import { format, getDate, getDay, getHours, getMinutes, isSameDay, set } from "date-fns";
+import { format, getDay, getHours, getMinutes, isSameDay, set } from "date-fns";
 import { z } from "zod";
 
 export function handlerApp(req: Request, res: Response) {
@@ -165,23 +166,19 @@ export async function handlerLogout(req: Request, res: Response) {
 	res.status(200).send();
 }
 
-///need to add filters - mainly used for finding friends?
+///need to add query params
 //removing sensitive info
 export async function handlerGetUsers(req: Request, res: Response) {
-	const users = await getAllUsersFromDb();
+	//validated user
+	const userId = req.userId;
+	if (!userId) throw new UnauthorizedError("User not authenticated");
+
+	//call db
+	const users = await getAllUsersFromDb(userId);
 	if (users == undefined) throw new Error("something went wrong with getting user or user does not exist");
 
-	const result = [];
-	//build result structure
-	for (const u of users) {
-		result.push({
-			id: u.id,
-			name: u.name,
-		});
-	}
-	//success
-	res.status(200);
-	res.send(result);
+	//return entire object
+	res.status(200).json(users);
 }
 
 export async function handlerGetProfile(req: Request, res: Response) {
@@ -288,34 +285,16 @@ export async function handlerDeleteSchedule(req: Request, res: Response) {
 	});
 }
 
-export async function handlerGetScheduleByUserId(req: Request, res: Response) {
+export async function handlerGetSchedules(req: Request, res: Response) {
 	//validated user
 	const userId = req.userId;
-
-	//get user id from passed param
-	const lookupUserId = req.params.userId;
-	if (!lookupUserId || typeof lookupUserId !== "string") throw new BadRequestError("userId cannot be blank");
+	if (!userId) throw new UnauthorizedError("User not authenticated");
 
 	//call db
-	const schedules = await getScheduleByUserFromDb(lookupUserId);
-	if (schedules == undefined) throw new Error("user has no schedule or failed to retrieve schedules");
-
-	const result = [];
-	//build result structure
-	for (const s of schedules) {
-		result.push({
-			id: s.id,
-			createdAt: s.createdAt,
-			updatedAt: s.updatedAt,
-			repeatType: s.repeatType,
-			userId: s.userId,
-			startTime: s.startTime,
-			endTime: s.endTime,
-		});
-	}
+	const result = await getScheduleByUserFromDb(userId);
 
 	//return 200 status with data
-	res.status(200).send(result);
+	res.status(200).json(result);
 }
 
 export async function handlerCompareUsersSchedules(req: Request, res: Response) {
@@ -372,6 +351,19 @@ export async function handlerCompareUsersSchedules(req: Request, res: Response) 
 /* ========================================================================= */
 //                        plans
 /* ========================================================================= */
+
+export async function handlerGetPlans(req: Request, res: Response) {
+	//validated user
+	const userId = req.userId;
+	if (!userId) throw new UnauthorizedError("User not authenticated");
+
+	//call db
+	const plans = await getPlansFromDb(userId);
+
+	//return entire object
+	res.status(200).json(plans);
+}
+
 export async function handlerCreatePlans(req: Request, res: Response) {
 	//validated user
 	const userId = req.userId;
@@ -420,6 +412,10 @@ export async function handlerCreatePlans(req: Request, res: Response) {
 	});
 }
 
+/* ========================================================================= */
+//                        error/other
+/* ========================================================================= */
+
 export function handlerError(err: Error, req: Request, res: Response, next: NextFunction) {
 	console.log(err.message);
 	//default to 500
@@ -462,50 +458,41 @@ export async function handlerReset(req: Request, res: Response) {
 export async function handlerRequestFriend(req: Request, res: Response) {
 	//validated user
 	const userId = req.userId;
+	if (!userId) throw new UnauthorizedError("User not authenticated");
 
-	//define shape
-	type Shape = {
-		friendId: string;
-	};
+	const schema = z.object({
+		friendId: z.string().min(1, "friendId cannot be blank"),
+	});
 
-	//get parsed body
-	const parse: Shape = req.body;
+	//try to parse
+	const body = schema.safeParse(req.body);
+	if (!body.success) throw new BadRequestError(body.error.issues[0]?.message ?? "Invalid request body");
+	const parse = body.data;
 
 	//handle the parsed data
 	if (!userId || userId === "") throw new BadRequestError("userId cannot be blank");
 	if (!parse.friendId || parse.friendId === "") throw new BadRequestError("friend id cannot be blank");
 
+	if (userId === parse.friendId) throw new BadRequestError("Cannot friend request yourself!");
+
 	//result
 	const result = await requestFriendInDb(userId, parse.friendId);
-	if (result == undefined) throw new Error("failed to request friend");
+	if (result === undefined) throw new Error("failed to request friend");
 
-	res.status(201).send({
-		userId: result.userId,
-		friendId: result.friendId,
-		createdAt: result.createdAt,
-		updatedAt: result.updatedAt,
-		status: result.status,
-	});
+	console.log(result);
+
+	res.status(201).json(result);
 }
 
 export async function handlerGetFriends(req: Request, res: Response) {
 	//validated user
 	const userId = req.userId;
+	if (!userId) throw new UnauthorizedError("User not authenticated");
 
 	//result
-	const result = await getFriendsInDb(userId!);
-	if (result == undefined) throw new Error("User has no friends");
+	const result = await getFriendsInDb(userId);
 
-	const friendsJson: FriendDetails[] = [];
-	for (const r of result) {
-		friendsJson.push({
-			userId: r.userId,
-			name: r.name,
-			updatedAt: r.updatedAt,
-			status: r.status,
-		});
-	}
-	res.status(200).send(friendsJson);
+	res.status(200).json(result);
 }
 
 export async function handlerGetFriendsOverlap(req: Request, res: Response) {
@@ -570,6 +557,8 @@ export async function handlerGetFriendsOverlap(req: Request, res: Response) {
 ////////////////////////////////////////////////////////////////////////////////////////////
 //Other
 ////////////////////////////////////////////////////////////////////////////////////////////
+//#region other
+
 export function getScheduleOverlap(first: Schedule, second: Schedule): Schedule | undefined {
 	//check for overlap first though because schedules are stored as an array of dates that are all the same time
 	//so if there is no overlap, then no need to check the dates
@@ -578,27 +567,6 @@ export function getScheduleOverlap(first: Schedule, second: Schedule): Schedule 
 	if (timeOverlap == undefined) return undefined;
 
 	const dateOverlaps: string[] = [];
-
-	//need to correct for timezones so using utc
-	//loop through both set of dates and see if any dates match
-	// for (const f of first.dates) {
-	// 	const firstDate = new Date(f);
-	// 	if (isNaN(firstDate.getTime())) continue;
-
-	// 	for (const s of second.dates) {
-	// 		const secondDate = new Date(f);
-	// 		if (isNaN(secondDate.getTime())) continue;
-
-	// 		// if dates are the same utc dates add to the overlap array
-	// 		if (
-	// 			firstDate.getUTCFullYear() === secondDate.getUTCFullYear() &&
-	// 			firstDate.getUTCMonth() === secondDate.getUTCMonth() &&
-	// 			firstDate.getUTCDate() === secondDate.getUTCDate()
-	// 		) {
-	// 			dateOverlaps.push(firstDate.toISOString());
-	// 		}
-	// 	}
-	// }
 
 	//build result
 	const overlap: Schedule = {
@@ -692,3 +660,4 @@ function getTimeOverlapRepeating(a: TimeRangeRepeating, b: TimeRangeRepeating): 
 
 	return undefined;
 }
+//#endregion
