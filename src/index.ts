@@ -2,6 +2,7 @@ import express from "express";
 import {
 	handlerApp,
 	handlerCompareUsersSchedules,
+	handlerCreatePlans,
 	handlerCreateSchedule,
 	handlerCreateUser,
 	handlerDeleteSchedule,
@@ -59,17 +60,22 @@ app.get("/api/friends/overlap", middlewareAuthentication, handlerGetFriendsOverl
 //schedules
 app.post("/api/schedules", middlewareAuthentication, handlerCreateSchedule);
 app.delete("/api/schedules", middlewareAuthentication, handlerDeleteSchedule);
-// validates user cred and that user is friends with user before showing the schedule
-app.get(
-	"/api/schedules/:userId",
-	middlewareAuthentication,
-	middlewareAuthorizedViewer,
-	handlerGetScheduleByUserId,
-);
+// validates user cred and that user is friends with user before showing the schedule (prob can remove since i wont need)
+app.get("/api/schedules/:userId", middlewareAuthentication, middlewareAuthorizedViewer, handlerGetScheduleByUserId);
+
+//plans
+app.post("/api/plans", middlewareAuthentication, handlerCreatePlans);
 
 /* ========================================================================= */
 //                   Error Handling Middleware - must go last
 /* ========================================================================= */
+
+//used for any unknown routes
+app.use("/api", (req, res) => {
+	res.status(404).json({
+		error: "API route not found",
+	});
+});
 
 app.use(handlerError);
 

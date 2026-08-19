@@ -5,6 +5,9 @@ import {
 	FriendDetails,
 	friends,
 	FriendStatusType,
+	Plan,
+	PlanRecord,
+	plans,
 	RefreshToken,
 	refreshTokens,
 	Schedule,
@@ -46,7 +49,7 @@ export async function getUserById(id: string): Promise<UserRecord | undefined> {
 }
 
 //need to add filters here - mainly for finding friends?
-export async function getAllUsersFromDb(): Promise<UserRecord[] | undefined> {
+export async function getAllUsersFromDb(): Promise<UserRecord[]> {
 	const result = await db.select().from(users);
 	return result;
 }
@@ -61,10 +64,7 @@ export async function addScheduleToDb(schedule: Schedule): Promise<ScheduleRecor
 }
 
 //will only return if user owns the schedule
-export async function deleteScheduleFromDb(
-	requestingUser: string,
-	id: string,
-): Promise<ScheduleRecord | undefined> {
+export async function deleteScheduleFromDb(requestingUser: string, id: string): Promise<ScheduleRecord | undefined> {
 	const [result] = await db
 		.delete(schedules)
 		.where(and(eq(schedules.userId, requestingUser), eq(schedules.id, id)))
@@ -72,9 +72,7 @@ export async function deleteScheduleFromDb(
 	return result;
 }
 
-export async function getScheduleByUserFromDb(
-	userId: string,
-): Promise<ScheduleRecord[] | undefined> {
+export async function getScheduleByUserFromDb(userId: string): Promise<ScheduleRecord[]> {
 	const result = await db.select().from(schedules).where(eq(schedules.userId, userId));
 	return result;
 }
@@ -91,10 +89,7 @@ export async function createRefreshToken(token: RefreshToken): Promise<RefreshTo
 //will return undefined if token is invalid or expired, otherwise returns userId
 export async function getRefreshTokenUser(tokenIdString: string): Promise<string | undefined> {
 	console.log(tokenIdString);
-	const [result] = await db
-		.select()
-		.from(refreshTokens)
-		.where(eq(refreshTokens.token, tokenIdString));
+	const [result] = await db.select().from(refreshTokens).where(eq(refreshTokens.token, tokenIdString));
 	if (result != undefined && result.revokedAt == null && result.expiresAt > new Date()) {
 		return result.userId;
 	}
@@ -103,11 +98,7 @@ export async function getRefreshTokenUser(tokenIdString: string): Promise<string
 
 //will revoke a token and return true on success
 export async function revokeToken(tokenIdString: string): Promise<boolean> {
-	const [result] = await db
-		.update(refreshTokens)
-		.set({ revokedAt: new Date() })
-		.where(eq(refreshTokens.token, tokenIdString))
-		.returning();
+	const [result] = await db.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.token, tokenIdString)).returning();
 	return result != undefined;
 }
 
@@ -123,11 +114,7 @@ export async function requestFriendInDb(user: string, other: string): Promise<Fr
 	const isMutual = requestReceived != undefined && requestReceived?.status === "requested";
 	if (isMutual) {
 		//update other user
-		const [otherUserResult] = await db
-			.update(friends)
-			.set({ status: "accepted" })
-			.where(eq(friends.friendId, user))
-			.returning();
+		const [otherUserResult] = await db.update(friends).set({ status: "accepted" }).where(eq(friends.friendId, user)).returning();
 	}
 
 	//just create entry for the user if this is initial request between the 2 users
@@ -143,7 +130,7 @@ export async function requestFriendInDb(user: string, other: string): Promise<Fr
 	return result;
 }
 
-export async function getFriendsInDb(user: string): Promise<FriendDetails[] | undefined> {
+export async function getFriendsInDb(user: string): Promise<FriendDetails[]> {
 	//check if other user has sent a friend req so we can know if status should be requested or accepted
 	const result: FriendDetails[] = await db
 		.select({
@@ -163,9 +150,7 @@ export async function checkUsersAreFriendsFromDb(user1: string, user2: string): 
 	const [result] = await db
 		.select()
 		.from(friends)
-		.where(
-			and(eq(friends.userId, user1), eq(friends.friendId, user2), eq(friends.status, "accepted")),
-		);
+		.where(and(eq(friends.userId, user1), eq(friends.friendId, user2), eq(friends.status, "accepted")));
 
 	return result !== undefined;
 }
@@ -190,15 +175,17 @@ export async function getAllFriendSchedules(userId: string): Promise<FriendSched
 			friendName: users.name,
 		})
 		.from(schedules)
-		.innerJoin(
-			friends,
-			and(
-				eq(schedules.userId, friends.friendId),
-				eq(friends.userId, userId),
-				eq(friends.status, "accepted"),
-			),
-		)
+		.innerJoin(friends, and(eq(schedules.userId, friends.friendId), eq(friends.userId, userId), eq(friends.status, "accepted")))
 		.innerJoin(users, eq(users.id, friends.friendId));
 
+	return result;
+}
+
+/* ========================================================================= */
+//                        plans
+/* ========================================================================= */
+
+export async function addPlansToDb(plan: Plan): Promise<PlanRecord | undefined> {
+	const [result] = await db.insert(plans).values(plan).onConflictDoNothing().returning();
 	return result;
 }

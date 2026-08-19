@@ -1,5 +1,5 @@
 import { primaryKey, uuid, pgTable, text, timestamp, varchar, pgEnum } from "drizzle-orm/pg-core";
-import { BIO_MAX_LENGTH, EMAIL_MAX_LENGTH } from "../data/constants";
+import { BIO_MAX_LENGTH, COMMENTS_MAX_LENGTH, EMAIL_MAX_LENGTH, TITLE_MAX_LENGTH } from "../data/constants";
 
 /* ========================================================================= */
 //                        users
@@ -79,7 +79,7 @@ export const refreshTokens = pgTable("refresh_tokens", {
 //                        friends
 /* ========================================================================= */
 
-export const friendStatusEnum = pgEnum("type", ["requested", "accepted", "blocked"]);
+export const friendStatusEnum = pgEnum("friend_status", ["requested", "accepted", "blocked"]);
 export type Friend = typeof friends.$inferInsert;
 export type FriendDetails = {
 	userId: typeof friends.$inferSelect.friendId;
@@ -109,6 +109,43 @@ export function isValidFriendStatus(obj: any): obj is FriendStatusType {
 	if (!obj || typeof obj !== "string") return false;
 
 	if (obj === "requested" || "accepted" || "blocked") return true;
+
+	return false;
+}
+
+/* ========================================================================= */
+//                        plans
+/* ========================================================================= */
+
+type PlanStatusType = "draft" | "pending" | "confirmed";
+export const PlanStatusEnum = pgEnum("plan_status", ["draft", "pending", "confirmed"]);
+
+export type Plan = typeof plans.$inferInsert;
+export type PlanRecord = typeof plans.$inferSelect;
+
+export const plans = pgTable("plans", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	creatorId: uuid("creator_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	friendId: uuid("friend_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at")
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+	status: PlanStatusEnum("status").notNull(),
+	title: varchar("title", { length: TITLE_MAX_LENGTH }).notNull().default("New Plans"),
+	comments: varchar("comments", { length: COMMENTS_MAX_LENGTH }).notNull().default(""),
+	meetTime: timestamp("meet_time").notNull(),
+});
+
+export function isValidPlanStatus(obj: any): obj is PlanStatusType {
+	if (!obj || typeof obj !== "string") return false;
+
+	if (obj === "draft" || "pending" || "confirmed") return true;
 
 	return false;
 }

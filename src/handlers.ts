@@ -1,9 +1,11 @@
-import { Friend, FriendDetails, isValidRepeatType, Schedule, ScheduleRepeatType } from "./db/schema";
+import { Friend, FriendDetails, isValidRepeatType, Plan, Schedule, ScheduleRecord, ScheduleRepeatType } from "./db/schema";
 import express, { Request, Response, NextFunction } from "express";
 import { BadRequestError, NotFoundError, ForbiddenError, UnauthorizedError, ConflictError } from "./error";
 import {
+	addPlansToDb as addPlanToDb,
 	addScheduleToDb,
 	addUserToDb,
+	checkUsersAreFriendsFromDb,
 	createRefreshToken,
 	deleteAll as deleteDb,
 	deleteScheduleFromDb,
@@ -19,8 +21,9 @@ import {
 	revokeToken,
 } from "./db/queries";
 import { checkPasswordHash, hashPassword, makeJWT, makeRefreshToken, validateJWT } from "./db/auth";
-import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./data/constants";
-import { getDate, getDay, getHours, getMinutes, isSameDay, set } from "date-fns";
+import { COMMENTS_MAX_LENGTH, EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, TITLE_MAX_LENGTH } from "./data/constants";
+import { format, getDate, getDay, getHours, getMinutes, isSameDay, set } from "date-fns";
+import { z } from "zod";
 
 export function handlerApp(req: Request, res: Response) {
 	return res.status(200).json({ message: "Hello from TypeScript & Express!" });
@@ -217,6 +220,22 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	if (!parse.endTime) throw new BadRequestError("End Time cannot be blank");
 	if (!isValidRepeatType(parse.repeatType)) throw new BadRequestError("Invalid repeat type");
 
+	//pull user schedules and see if new one would clash
+	const userSchedules = await getScheduleByUserFromDb(userId!);
+
+	for (const s of userSchedules) {
+		const overlap = getTimeOverlapRepeating(
+			{ start: s.startTime, end: s.endTime, repeatType: s.repeatType },
+			{ start: parse.startTime, end: parse.endTime, repeatType: parse.repeatType },
+		);
+
+		//overlap found
+		if (overlap !== undefined)
+			throw new BadRequestError(
+				`This availability overlaps your existing schedule from ${format(s.startTime, "h:mm a")} to ${format(s.endTime, "h:mm a")}.`,
+			);
+	}
+
 	//result
 	const result = await addScheduleToDb({
 		userId: userId!,
@@ -348,6 +367,57 @@ export async function handlerCompareUsersSchedules(req: Request, res: Response) 
 
 	//return 200 status with data
 	res.status(200).send(result);
+}
+
+/* ========================================================================= */
+//                        plans
+/* ========================================================================= */
+export async function handlerCreatePlans(req: Request, res: Response) {
+	//validated user
+	const userId = req.userId;
+
+	//create schema
+	const schema = z.object({
+		friendId: z.string().min(1, "friendId cannot be blank"),
+		meetTime: z.coerce.date({
+			error: "meetTime must be a valid date",
+		}),
+		title: z.string().max(TITLE_MAX_LENGTH, "Title is too long"),
+		comments: z.string().max(COMMENTS_MAX_LENGTH, "Comments are too long").optional(),
+	});
+
+	//try to parse
+	const body = schema.safeParse(req.body);
+	if (!body.success) throw new BadRequestError(body.error.issues[0]?.message ?? "Invalid request body");
+	const parse = body.data;
+
+	//call db
+	const areFriends = await checkUsersAreFriendsFromDb(userId!, parse.friendId);
+	if (!areFriends) throw new UnauthorizedError("User is not friends with other user");
+
+	const result = await addPlanToDb({
+		creatorId: userId!,
+		friendId: parse.friendId,
+		status: "pending",
+		meetTime: parse.meetTime,
+		title: parse.title,
+		comments: parse?.comments ?? "",
+	});
+
+	if (result == undefined) throw new Error("something went wrong adding the plan to the db");
+
+	//return 201 status with data
+	res.status(201).send({
+		id: result.id,
+		createdAt: result.createdAt,
+		updatedAt: result.updatedAt,
+		creatorId: result.creatorId,
+		friendId: result.friendId,
+		status: result.status,
+		title: result.title,
+		comments: result.comments,
+		meetTime: result.meetTime,
+	});
 }
 
 export function handlerError(err: Error, req: Request, res: Response, next: NextFunction) {
@@ -617,7 +687,6 @@ function getTimeOverlapRepeating(a: TimeRangeRepeating, b: TimeRangeRepeating): 
 			end: _minutesToDate(minEnd, new Date()),
 			repeatType: repeat,
 		};
-		console.log(result);
 		return result;
 	}
 

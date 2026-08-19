@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1785561354251,
-      "tag": "0000_blushing_white_tiger",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1785576951761,
-      "tag": "0001_daily_pixie",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1785577149732,
-      "tag": "0002_flaky_reavers",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1787055183448,
-      "tag": "0003_smiling_the_stranger",
+      "when": 1787137183066,
+      "tag": "0000_light_rawhide_kid",
       "breakpoints": true
     }
   ]
