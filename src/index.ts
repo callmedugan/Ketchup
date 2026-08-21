@@ -1,6 +1,7 @@
 import express from "express";
 import {
 	handlerApp,
+	handlerCancelPlan,
 	handlerCompareUsersSchedules,
 	handlerCreatePlans,
 	handlerCreateSchedule,
@@ -18,8 +19,9 @@ import {
 	handlerRefresh,
 	handlerRequestFriend,
 	handlerReset,
+	handlerRespondToPlan,
 } from "./handlers";
-import { middlewareAuthentication, middlewareAuthorizedViewer } from "./middleware";
+import { middlewareAuthentication } from "./middleware";
 import cors from "cors";
 
 const app = express();
@@ -62,11 +64,13 @@ app.get("/api/friends/overlap", middlewareAuthentication, handlerGetFriendsOverl
 app.post("/api/schedules", middlewareAuthentication, handlerCreateSchedule);
 app.delete("/api/schedules", middlewareAuthentication, handlerDeleteSchedule);
 // validates user cred and that user is friends with user before showing the schedule (prob can remove since i wont need)
-app.get("/api/schedules/:userId", middlewareAuthentication, middlewareAuthorizedViewer, handlerGetSchedules);
+app.get("/api/schedules", middlewareAuthentication, handlerGetSchedules);
 
 //plans
 app.get("/api/plans", middlewareAuthentication, handlerGetPlans);
 app.post("/api/plans", middlewareAuthentication, handlerCreatePlans);
+app.patch("/api/plans/:id/respond", middlewareAuthentication, handlerRespondToPlan);
+app.delete("/api/plans/:id", middlewareAuthentication, handlerCancelPlan);
 
 /* ========================================================================= */
 //                   Error Handling Middleware - must go last

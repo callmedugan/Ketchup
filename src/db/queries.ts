@@ -29,6 +29,7 @@ export async function deleteDb() {
 	await db.delete(schedules);
 	await db.delete(refreshTokens);
 	await db.delete(friends);
+	await db.delete(plans);
 }
 
 /* ========================================================================= */
@@ -263,12 +264,46 @@ export async function getPlansFromDb(userId: string): Promise<PlanRecordDetails[
 			title: plans.title,
 			comments: plans.comments,
 			meetTime: plans.meetTime,
+			lastUpdatedBy: plans.lastUpdatedBy,
+			location: plans.location,
 
 			friendName: users.name,
 		})
 		.from(plans)
 		.innerJoin(users, eq(plans.friendId, users.id))
-		.where(eq(plans.creatorId, userId));
+		.where(or(eq(plans.creatorId, userId), eq(plans.friendId, userId)));
+
+	return result;
+}
+
+export async function respondToPlanInDb(userId: string, planId: string, response: "accepted" | "declined"): Promise<PlanRecord | undefined> {
+	const [result] = await db
+		.update(plans)
+		.set({ status: response === "accepted" ? "confirmed" : "declined", lastUpdatedBy: userId })
+		.where(and(eq(plans.friendId, userId), eq(plans.id, planId), eq(plans.status, "pending")))
+		.returning();
+
+	return result;
+}
+
+//only allow pedning or confirmed plans to be cancelled
+export async function cancelPlanInDb(userId: string, planId: string): Promise<PlanRecord | undefined> {
+	const [result] = await db
+		.update(plans)
+		.set({
+			status: "cancelled",
+			lastUpdatedBy: userId,
+		})
+		.where(
+			and(
+				eq(plans.id, planId),
+
+				or(eq(plans.creatorId, userId), eq(plans.friendId, userId)),
+
+				or(eq(plans.status, "pending"), eq(plans.status, "confirmed")),
+			),
+		)
+		.returning();
 
 	return result;
 }

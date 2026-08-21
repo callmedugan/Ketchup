@@ -130,8 +130,8 @@ export function isValidFriendStatus(obj: any): obj is FriendStatusType {
 //                        plans
 /* ========================================================================= */
 
-type PlanStatusType = "draft" | "pending" | "confirmed";
-export const PlanStatusEnum = pgEnum("plan_status", ["draft", "pending", "confirmed"]);
+type PlanStatusType = "declined" | "pending" | "confirmed" | "cancelled";
+export const PlanStatusEnum = pgEnum("plan_status", ["declined", "pending", "confirmed", "cancelled"]);
 
 export type Plan = typeof plans.$inferInsert;
 export type PlanRecord = typeof plans.$inferSelect;
@@ -150,15 +150,17 @@ export const plans = pgTable("plans", {
 		.defaultNow()
 		.$onUpdate(() => new Date()),
 	status: PlanStatusEnum("status").notNull(),
-	title: varchar("title", { length: TITLE_MAX_LENGTH }).notNull().default("New Plans"),
+	title: varchar("title", { length: TITLE_MAX_LENGTH }).notNull().default("New Plan"),
 	comments: varchar("comments", { length: COMMENTS_MAX_LENGTH }).notNull().default(""),
 	meetTime: timestamp("meet_time").notNull(),
+	lastUpdatedBy: uuid("last_updated_by").references(() => users.id),
+	location: varchar("location", { length: 255 }),
 });
 
 export function isValidPlanStatus(obj: any): obj is PlanStatusType {
 	if (!obj || typeof obj !== "string") return false;
 
-	if (obj === "draft" || "pending" || "confirmed") return true;
+	if (obj === "declined" || "pending" || "confirmed" || "cancelled") return true;
 
 	return false;
 }

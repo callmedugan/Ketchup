@@ -27,24 +27,3 @@ export async function middlewareAuthentication(req: Request, res: Response, next
 
 	return next();
 }
-
-export async function middlewareAuthorizedViewer(req: Request, res: Response, next: NextFunction) {
-	//check to see if user matches target user or is friends with them
-
-	//validated user
-	const userId = req.userId;
-	if (!userId || typeof userId !== "string") throw new BadRequestError("userId missing or invalid");
-
-	//get user id from passed param
-	const lookupUserId = req.params.userId;
-	if (!lookupUserId || typeof lookupUserId !== "string")
-		throw new BadRequestError("targetUserId param missing or invalid");
-
-	//only run query if needed
-	if (userId === lookupUserId) return next();
-	const isFriend = await checkUsersAreFriendsFromDb(userId, lookupUserId);
-	if (isFriend) return next();
-
-	//finally
-	throw new UnauthorizedError("user must be friends with user to view schedule");
-}

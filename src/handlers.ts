@@ -5,6 +5,7 @@ import {
 	addPlanToDb,
 	addScheduleToDb,
 	addUserToDb,
+	cancelPlanInDb,
 	checkUsersAreFriendsFromDb,
 	createRefreshToken,
 	deleteDb,
@@ -19,12 +20,14 @@ import {
 	getUserByEmail,
 	getUserById,
 	requestFriendInDb,
+	respondToPlanInDb,
 	revokeToken,
 } from "./db/queries";
 import { checkPasswordHash, hashPassword, makeJWT, makeRefreshToken } from "./db/auth";
 import {
 	COMMENTS_MAX_LENGTH,
 	EMAIL_MAX_LENGTH,
+	LOCATION_MAX_LENGTH,
 	PASSWORD_MAX_LENGTH,
 	PASSWORD_MIN_LENGTH,
 	REFRESH_TOKEN_EXPIRATION_DAYS,
@@ -356,6 +359,11 @@ export async function handlerCompareUsersSchedules(req: Request, res: Response) 
 //                        plans
 /* ========================================================================= */
 
+//used for routes with planId param
+const planParamsSchema = z.object({
+	id: z.uuid(),
+});
+
 export async function handlerGetPlans(req: Request, res: Response) {
 	//validated user
 	const userId = req.userId;
@@ -371,6 +379,7 @@ export async function handlerGetPlans(req: Request, res: Response) {
 export async function handlerCreatePlans(req: Request, res: Response) {
 	//validated user
 	const userId = req.userId;
+	if (!userId) throw new UnauthorizedError("User not authenticated");
 
 	//create schema
 	const schema = z.object({
@@ -380,6 +389,7 @@ export async function handlerCreatePlans(req: Request, res: Response) {
 		}),
 		title: z.string().max(TITLE_MAX_LENGTH, "Title is too long"),
 		comments: z.string().max(COMMENTS_MAX_LENGTH, "Comments are too long").optional(),
+		location: z.string().max(LOCATION_MAX_LENGTH, "Location is too long").optional(),
 	});
 
 	//try to parse
@@ -397,23 +407,60 @@ export async function handlerCreatePlans(req: Request, res: Response) {
 		status: "pending",
 		meetTime: parse.meetTime,
 		title: parse.title,
-		comments: parse?.comments ?? "",
+		comments: parse.comments ?? "",
+		location: parse.location ?? "",
+		lastUpdatedBy: userId,
 	});
 
 	if (result == undefined) throw new Error("something went wrong adding the plan to the db");
 
 	//return 201 status with data
-	res.status(201).send({
-		id: result.id,
-		createdAt: result.createdAt,
-		updatedAt: result.updatedAt,
-		creatorId: result.creatorId,
-		friendId: result.friendId,
-		status: result.status,
-		title: result.title,
-		comments: result.comments,
-		meetTime: result.meetTime,
+	res.status(201).json(result);
+}
+
+export async function handlerRespondToPlan(req: Request, res: Response) {
+	//validated user
+	const userId = req.userId;
+	if (!userId) throw new UnauthorizedError("User not authenticated");
+
+	//zod schema
+	const bodySchema = z.object({
+		response: z.enum(["accepted", "declined"]),
 	});
+
+	//try to parse
+	const tryBody = bodySchema.safeParse(req.body);
+	if (!tryBody.success) throw new BadRequestError(tryBody.error.issues[0]?.message ?? "Invalid request body");
+	const tryParams = planParamsSchema.safeParse(req.params);
+	if (!tryParams.success) throw new BadRequestError(tryParams.error.issues[0]?.message ?? "Invalid params provided");
+
+	const body = tryBody.data;
+	const params = tryParams.data;
+
+	//call db
+	const planResponse = await respondToPlanInDb(userId, params.id, body.response);
+	if (!planResponse) throw new NotFoundError("Failed to respond to plan");
+
+	//return 200 status with data
+	res.status(200).json(planResponse);
+}
+
+export async function handlerCancelPlan(req: Request, res: Response) {
+	//validated user
+	const userId = req.userId;
+	if (!userId) throw new UnauthorizedError("User not authenticated");
+
+	const tryParams = planParamsSchema.safeParse(req.params);
+	if (!tryParams.success) throw new BadRequestError(tryParams.error.issues[0]?.message ?? "Invalid params provided");
+
+	const params = tryParams.data;
+
+	//call db
+	const cancelledPlan = await cancelPlanInDb(userId, params.id);
+	if (!cancelledPlan) throw new NotFoundError("Failed to cancel plan");
+
+	//return 204 status with data
+	res.status(204).json(cancelledPlan);
 }
 
 /* ========================================================================= */
@@ -482,8 +529,6 @@ export async function handlerRequestFriend(req: Request, res: Response) {
 	//result
 	const result = await requestFriendInDb(userId, parse.friendId);
 	if (result === undefined) throw new Error("failed to request friend");
-
-	console.log(result);
 
 	res.status(201).json(result);
 }

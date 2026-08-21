@@ -10,4 +10,5 @@ export const PASSWORD_MIN_LENGTH = 6;
 export const BIO_MAX_LENGTH = 300;
 //plans
 export const TITLE_MAX_LENGTH = 50;
+export const LOCATION_MAX_LENGTH = 75;
 export const COMMENTS_MAX_LENGTH = 300;
