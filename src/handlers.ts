@@ -1,13 +1,13 @@
-import { Friend, FriendDetails, FriendStatusSchema, isValidRepeatType, Plan, Schedule, ScheduleRepeatType } from "./db/schema";
-import express, { Request, Response, NextFunction } from "express";
+import { isValidRepeatType, Schedule, ScheduleRepeatType } from "./db/schema";
+import { Request, Response, NextFunction } from "express";
 import { BadRequestError, NotFoundError, ForbiddenError, UnauthorizedError, ConflictError } from "./error";
 import {
-	addPlansToDb as addPlanToDb,
+	addPlanToDb,
 	addScheduleToDb,
 	addUserToDb,
 	checkUsersAreFriendsFromDb,
 	createRefreshToken,
-	deleteAll as deleteDb,
+	deleteDb,
 	deleteScheduleFromDb,
 	FriendScheduleRecord,
 	getAllFriendSchedules,
@@ -22,7 +22,14 @@ import {
 	revokeToken,
 } from "./db/queries";
 import { checkPasswordHash, hashPassword, makeJWT, makeRefreshToken } from "./db/auth";
-import { COMMENTS_MAX_LENGTH, EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, TITLE_MAX_LENGTH } from "./data/constants";
+import {
+	COMMENTS_MAX_LENGTH,
+	EMAIL_MAX_LENGTH,
+	PASSWORD_MAX_LENGTH,
+	PASSWORD_MIN_LENGTH,
+	REFRESH_TOKEN_EXPIRATION_DAYS,
+	TITLE_MAX_LENGTH,
+} from "./data/constants";
 import { format, getDay, getHours, getMinutes, isSameDay, set } from "date-fns";
 import { z } from "zod";
 
@@ -31,45 +38,43 @@ export function handlerApp(req: Request, res: Response) {
 }
 
 export async function handlerCreateUser(req: Request, res: Response) {
-	//define shape
-	type Shape = {
-		email: string;
-		name: string;
-		password: string;
-	};
-
-	//get parsed body
-	const parse: Shape = req.body;
-
-	//handle the parsed data
-	if (!parse.email || parse.email === "") throw new BadRequestError("Email cannot be blank");
-	if (!parse.name || parse.name === "") throw new BadRequestError("Name cannot be blank");
-	if (!parse.password || parse.password === "") throw new BadRequestError("Password cannot be blank");
-
-	//validate password
-	if (parse.password.length < PASSWORD_MIN_LENGTH) throw new BadRequestError(`Password must be ${PASSWORD_MIN_LENGTH} characters or more`);
-	if (parse.password.length > PASSWORD_MAX_LENGTH) throw new BadRequestError(`Password must be ${PASSWORD_MAX_LENGTH} characters or less`);
-	const hashedPassword = await hashPassword(parse.password);
-
-	//validate email
-	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parse.email)) throw new BadRequestError("Email is invalid format");
-	const cleanEmail = parse.email.trim().toLowerCase();
-	if (cleanEmail.length > EMAIL_MAX_LENGTH) throw new BadRequestError(`Email must be ${EMAIL_MAX_LENGTH} characters or less`);
-	const userExists = await getUserByEmail(cleanEmail);
-	if (userExists != undefined) throw new ConflictError("Email has an existing account");
-
-	//result
-	const result = await addUserToDb({
-		name: parse.name,
-		email: cleanEmail,
-		hashedPassword: hashedPassword,
+	// create schema
+	const schema = z.object({
+		email: z
+			.email("Email is invalid format")
+			.trim()
+			.toLowerCase()
+			.min(1, "Email cannot be blank")
+			.max(EMAIL_MAX_LENGTH, `Email must be ${EMAIL_MAX_LENGTH} characters or less`),
+		name: z.string().trim().min(1, "Name cannot be blank"),
+		password: z
+			.string()
+			.min(PASSWORD_MIN_LENGTH, `Password must be ${PASSWORD_MIN_LENGTH} characters or more`)
+			.max(PASSWORD_MAX_LENGTH, `Password must be ${PASSWORD_MAX_LENGTH} characters or less`),
 	});
-	if (result == undefined) throw new Error("Something went wrong creating the user");
 
-	//console.log("Created new user: ", result);
+	// validate body
+	const body = schema.safeParse(req.body);
+	if (!body.success) throw new BadRequestError(body.error.issues[0]?.message ?? "Invalid request body");
+	const { email, name, password } = body.data;
 
-	//return 201 status with password omitted
-	res.status(201).send({
+	// check if email already exists
+	const userExists = await getUserByEmail(email);
+	if (userExists !== undefined) throw new ConflictError("Email has an existing account");
+
+	// hash password
+	const hashedPassword = await hashPassword(password);
+
+	// create user
+	const result = await addUserToDb({
+		name,
+		email,
+		hashedPassword,
+	});
+	if (result === undefined) throw new Error("Something went wrong creating the user");
+
+	// return 201 with password omitted
+	res.status(201).json({
 		id: result.id,
 		name: result.name,
 		email: result.email,
@@ -79,55 +84,54 @@ export async function handlerCreateUser(req: Request, res: Response) {
 }
 
 export async function handlerLogin(req: Request, res: Response) {
-	//define shape
-	type Shape = {
-		email: string;
-		password: string;
-	};
+	// create schema
+	const schema = z.object({
+		email: z.email("Email is invalid format").trim().toLowerCase().min(1, "Email cannot be blank"),
+		password: z.string().min(1, "Password cannot be blank"),
+	});
 
-	//get parsed body
-	const parse: Shape = req.body;
+	// validate body
+	const body = schema.safeParse(req.body);
+	if (!body.success) throw new BadRequestError(body.error.issues[0]?.message ?? "Invalid request body");
+	const { email, password } = body.data;
 
-	//handle the parsed data
-	if (!parse.email || parse.email === "") throw new BadRequestError("Email cannot be blank");
-	if (!parse.password || parse.password === "") throw new BadRequestError("Password cannot be blank");
+	// get user
+	const user = await getUserByEmail(email);
+	if (user === undefined || user.hashedPassword === undefined || user.id === undefined) throw new UnauthorizedError("Incorrect email or password");
 
-	//hash provided password
-	const cleanEmail = parse.email.trim().toLowerCase();
-	const user = await getUserByEmail(cleanEmail);
-	if (user == undefined || user.hashedPassword == undefined || user.id == undefined) {
-		throw new UnauthorizedError("Incorrect email or password");
-	}
-
-	//auth
+	// authenticate password
 	let isAuth = false;
+
 	try {
-		isAuth = await checkPasswordHash(parse.password, user.hashedPassword);
-	} catch (err) {
+		isAuth = await checkPasswordHash(password, user.hashedPassword);
+	} catch {
 		throw new UnauthorizedError("Incorrect email or password");
 	}
+
 	if (!isAuth) throw new UnauthorizedError("Incorrect email or password");
 
-	//success
+	// create access token
 	const token = makeJWT(user.id, process.env.JWT_SECRET!);
+
+	// create refresh token
 	const refreshTokenString = makeRefreshToken();
 	const expiration = new Date();
-	expiration.setDate(expiration.getDate() + 3600);
+	expiration.setDate(expiration.getDate() + REFRESH_TOKEN_EXPIRATION_DAYS);
 	const refreshToken = await createRefreshToken({
 		token: refreshTokenString,
 		userId: user.id,
 		expiresAt: expiration,
 	});
-	if (refreshToken == undefined) throw new Error("Failed to create refresh token on login");
+	if (refreshToken === undefined) throw new Error("Failed to create refresh token on login");
 
-	//return
-	res.status(200).send({
+	// return
+	res.status(200).json({
 		id: user.id,
 		email: user.email,
 		name: user.name,
 		createdAt: user.createdAt,
 		updatedAt: user.updatedAt,
-		token: token,
+		token,
 		refreshToken: refreshTokenString,
 		bio: user.bio,
 	});
@@ -229,7 +233,7 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 		//overlap found
 		if (overlap !== undefined)
 			throw new BadRequestError(
-				`This availability overlaps your existing schedule from ${format(s.startTime, "h:mm a")} to ${format(s.endTime, "h:mm a")}.`,
+				`This availability overlaps your existing schedule on ${format(s.startTime, "Pp")} to ${format(s.endTime, "h:mm a")}.`,
 			);
 	}
 

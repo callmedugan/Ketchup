@@ -4,6 +4,7 @@ import { UnauthorizedError } from "../error";
 //goofy naming clash so have to import like this, pkg as all defaults, destructure and then rename
 import pkg, { JwtPayload } from "jsonwebtoken";
 import { randomBytes } from "crypto";
+import { JWT_TOKEN_EXPIRATION_MINS } from "../data/constants";
 const { sign, verify: jwtVerify } = pkg;
 
 export async function hashPassword(password: string): Promise<string> {
@@ -11,10 +12,7 @@ export async function hashPassword(password: string): Promise<string> {
 	return result;
 }
 
-export async function checkPasswordHash(
-	rawPassword: string,
-	hashedPassword: string,
-): Promise<boolean> {
+export async function checkPasswordHash(rawPassword: string, hashedPassword: string): Promise<boolean> {
 	const result = await argonVerify(hashedPassword, rawPassword);
 	return result;
 }
@@ -22,8 +20,7 @@ export async function checkPasswordHash(
 //narrow the types of keys
 type Payload = Pick<JwtPayload, "iss" | "sub" | "iat" | "exp">;
 
-//creates jwt obviously, expire time is in seconds
-export function makeJWT(userID: string, secret: string, expiresIn: number = 360): string {
+export function makeJWT(userID: string, secret: string): string {
 	const issuedTime = Math.floor(Date.now() / 1000);
 	const payload: Payload = {
 		//issuer
@@ -33,7 +30,7 @@ export function makeJWT(userID: string, secret: string, expiresIn: number = 360)
 		//time issued
 		iat: issuedTime,
 		//time expires
-		exp: issuedTime + expiresIn,
+		exp: issuedTime + JWT_TOKEN_EXPIRATION_MINS * 60,
 	};
 	try {
 		const result = sign(payload, secret);

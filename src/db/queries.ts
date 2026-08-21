@@ -24,7 +24,7 @@ import { BadRequestError, NotFoundError } from "../error";
 //                        all
 /* ========================================================================= */
 
-export async function deleteAll() {
+export async function deleteDb() {
 	await db.delete(users);
 	await db.delete(schedules);
 	await db.delete(refreshTokens);
@@ -243,7 +243,7 @@ export async function getAllFriendSchedules(userId: string): Promise<FriendSched
 //                        plans
 /* ========================================================================= */
 
-export async function addPlansToDb(plan: Plan): Promise<PlanRecord | undefined> {
+export async function addPlanToDb(plan: Plan): Promise<PlanRecord | undefined> {
 	const [result] = await db.insert(plans).values(plan).onConflictDoNothing().returning();
 	return result;
 }

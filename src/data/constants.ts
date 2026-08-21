@@ -1,3 +1,6 @@
+//auth
+export const JWT_TOKEN_EXPIRATION_MINS = 30;
+export const REFRESH_TOKEN_EXPIRATION_DAYS = 30;
 //email
 export const EMAIL_MAX_LENGTH = 255;
 //password
