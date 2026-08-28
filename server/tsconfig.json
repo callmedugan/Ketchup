@@ -1,8 +1,8 @@
 {
    "compilerOptions": {
     // File Layout
-    //"rootDir": "./src",
-     "outDir": "./dist",
+    "rootDir": "./src",
+    "outDir": "./dist",
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
@@ -42,5 +42,5 @@
     "forceConsistentCasingInFileNames": true,  
     
   },
-  "include": ["src/**/*", "drizzle.config.ts"]
+  "include": ["src/**/*"]
 }
