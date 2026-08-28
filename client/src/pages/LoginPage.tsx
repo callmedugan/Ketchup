@@ -41,16 +41,10 @@ export function LoginPage() {
 		setIsLoading(true);
 
 		try {
-			const response = await authFetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+			const response = await authFetch(`/auth/login`, {
 				method: "POST",
-				headers: {
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					email: emailRef.current?.value,
-					password: passwordRef.current?.value,
-				}),
+				headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+				body: JSON.stringify({ email: emailRef.current?.value, password: passwordRef.current?.value }),
 			});
 
 			const data = await response.json();

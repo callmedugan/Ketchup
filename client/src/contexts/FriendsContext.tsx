@@ -64,7 +64,7 @@ export const FriendsProvider = ({ children }: FriendsProviderProps) => {
 	//#region api calls
 
 	async function fetchFriends(): Promise<Friend[]> {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/friends`);
+		const response = await authFetch(`/api/friends`);
 
 		const data = await response.json();
 		if (!response.ok) throw new Error(data.error);
@@ -79,7 +79,7 @@ export const FriendsProvider = ({ children }: FriendsProviderProps) => {
 
 	async function searchUsers(search: string): Promise<UserSearchResult[]> {
 		const params = new URLSearchParams({ search: search.trim() });
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/users?${params.toString()}`);
+		const response = await authFetch(`/api/users?${params.toString()}`);
 
 		if (!response.ok) {
 			const data = await response.json();
@@ -95,7 +95,7 @@ export const FriendsProvider = ({ children }: FriendsProviderProps) => {
 	}
 
 	async function addFriend(friendId: string): Promise<Friend[]> {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/friends`, { method: "POST", body: JSON.stringify({ friendId }) });
+		const response = await authFetch(`/api/friends`, { method: "POST", body: JSON.stringify({ friendId }) });
 
 		if (!response.ok) {
 			const data = await response.json();
@@ -106,7 +106,7 @@ export const FriendsProvider = ({ children }: FriendsProviderProps) => {
 	}
 
 	async function deleteFriend(friendId: string): Promise<Friend[]> {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/friends`, { method: "DELETE", body: JSON.stringify({ friendId }) });
+		const response = await authFetch(`/api/friends`, { method: "DELETE", body: JSON.stringify({ friendId }) });
 
 		if (!response.ok) {
 			const data = await response.json();
@@ -117,10 +117,7 @@ export const FriendsProvider = ({ children }: FriendsProviderProps) => {
 	}
 
 	async function respondToFriendRequest(friendId: string, responseValue: "accepted" | "declined"): Promise<Friend[]> {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/friends/${friendId}/respond`, {
-			method: "PATCH",
-			body: JSON.stringify({ response: responseValue }),
-		});
+		const response = await authFetch(`/api/friends/${friendId}/respond`, { method: "PATCH", body: JSON.stringify({ response: responseValue }) });
 
 		if (!response.ok) {
 			const data = await response.json();
@@ -147,7 +144,7 @@ export const FriendsProvider = ({ children }: FriendsProviderProps) => {
 	}
 
 	async function blockFriend(friendId: string): Promise<Friend[]> {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/friends/${friendId}/block`, { method: "PUT" });
+		const response = await authFetch(`/api/friends/${friendId}/block`, { method: "PUT" });
 
 		if (!response.ok) {
 			const data = await response.json();
@@ -158,7 +155,7 @@ export const FriendsProvider = ({ children }: FriendsProviderProps) => {
 	}
 
 	async function unblockFriend(friendId: string): Promise<Friend[]> {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/friends/${friendId}/block`, { method: "DELETE" });
+		const response = await authFetch(`/api/friends/${friendId}/block`, { method: "DELETE" });
 
 		if (!response.ok) {
 			const data = await response.json();

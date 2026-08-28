@@ -86,18 +86,6 @@ export function handlerRequestLogger(req: Request, res: Response, next: NextFunc
 //#endregion
 
 /* ========================================================================= */
-//                        app
-/* ========================================================================= */
-
-//#region app
-
-export function handlerApp(req: Request, res: Response) {
-	return res.status(200).json({ message: "Hello, welcome to Ketchup's backend!" });
-}
-
-//#endregion
-
-/* ========================================================================= */
 //                        auth
 /* ========================================================================= */
 

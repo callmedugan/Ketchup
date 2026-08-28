@@ -72,7 +72,7 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 	//#region api calls
 
 	async function fetchUserSchedules() {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/schedules`);
+		const response = await authFetch(`/api/schedules`);
 		if (!response.ok) {
 			const data = await response.json();
 			throw new Error(data.error);
@@ -87,7 +87,7 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 	}
 
 	async function fetchMatchedSchedules() {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/friends/overlap`);
+		const response = await authFetch(`/api/friends/overlap`);
 		if (!response.ok) {
 			const data = await response.json();
 			throw new Error(data.error);
@@ -104,7 +104,7 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 	}
 
 	async function deleteUserSchedule(id: string) {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/schedules`, { method: "DELETE", body: JSON.stringify({ id: id }) });
+		const response = await authFetch(`/api/schedules`, { method: "DELETE", body: JSON.stringify({ id: id }) });
 		if (!response.ok) {
 			const data = await response.json();
 			throw new Error(data.error);
@@ -124,7 +124,7 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 		const scheduleStart = new Date(`${date}T${startTime}`);
 		const scheduleEnd = new Date(`${date}T${endTime}`);
 
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/schedules`, {
+		const response = await authFetch(`/api/schedules`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ userId, startTime: scheduleStart.toISOString(), endTime: scheduleEnd.toISOString(), repeatType, timezone }),

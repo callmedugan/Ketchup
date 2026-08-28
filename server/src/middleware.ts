@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { validateJWT } from "./db/auth.js";
 import { BadRequestError, UnauthorizedError } from "./error.js";
+import rateLimit from "express-rate-limit";
 
 declare global {
 	namespace Express {
@@ -26,3 +27,12 @@ export async function middlewareAuthentication(req: Request, res: Response, next
 
 	return next();
 }
+
+// user ip is stored in memory, so it will reset on server restart and this can be bypassed by someone using ip rotation
+export const middlewareAuthRateLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minute ban window
+	limit: 5, // Limit each IP to 5 failed attempts per window
+	message: { status: 429, error: "Too many login attempts. Please try again after 15 minutes." },
+	standardHeaders: "draft-7",
+	legacyHeaders: false,
+});

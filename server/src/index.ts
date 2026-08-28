@@ -1,6 +1,5 @@
 import express from "express";
 import {
-	handlerApp,
 	handlerCancelPlan,
 	handlerCompareUsersSchedules,
 	handlerCreatePlans,
@@ -26,17 +25,21 @@ import {
 	handlerBlockUser,
 	handlerUnblockUser,
 } from "./handlers.js";
-import { middlewareAuthentication } from "./middleware.js";
+import { middlewareAuthRateLimiter, middlewareAuthentication } from "./middleware.js";
 import cors from "cors";
+import path from "path";
 
 const app = express();
+
+//used to serve static files - process.cwd will be set in the start script
+const clientPath = path.resolve(process.cwd(), "../client/dist");
 
 //prevents browser blocking page from cors policy
 const allowedOrigins = [process.env.FRONTEND_URL, process.env.DEV_FRONTEND_URL].filter((origin): origin is string => Boolean(origin));
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 
-// Middleware
-app.use(express.json());
+// allow json and limit to 100kb of data
+app.use(express.json({ limit: "100kb" }));
 
 //dev
 app.post("/admin/reset", handlerReset);
@@ -45,10 +48,8 @@ app.post("/admin/reset", handlerReset);
 //                        handlers
 /* ========================================================================= */
 
-app.get("/", handlerApp);
-
-app.post("/auth/login", handlerLogin);
-app.post("/auth/refresh", handlerRefresh);
+app.post("/auth/login", middlewareAuthRateLimiter, handlerLogin);
+app.post("/auth/refresh", middlewareAuthRateLimiter, handlerRefresh);
 app.post("/auth/logout", middlewareAuthentication, handlerLogout);
 
 app.get("/api/users", middlewareAuthentication, handlerSearchForUsers);
@@ -81,6 +82,14 @@ app.delete("/api/plans/:id", middlewareAuthentication, handlerCancelPlan);
 /* ========================================================================= */
 //                   Error Handling Middleware - must go last
 /* ========================================================================= */
+
+// Static frontend files
+app.use(express.static(clientPath));
+
+// React Router fallback
+app.get("/{*splat}", (_req, res) => {
+	res.sendFile(path.join(clientPath, "index.html"));
+});
 
 //used for any unknown routes
 app.use("/api", (req, res) => {

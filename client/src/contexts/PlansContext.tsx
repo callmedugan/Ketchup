@@ -72,7 +72,7 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 	//#region api calls
 
 	async function fetchPlans(): Promise<PlanData[]> {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/plans`);
+		const response = await authFetch(`/api/plans`);
 
 		if (!response.ok) {
 			const data = await response.json();
@@ -89,7 +89,7 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 	}
 
 	async function addPlan(friendId: string, title: string, comments: string, meetTime: Date, location: string): Promise<PlanData[]> {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/plans`, {
+		const response = await authFetch(`/api/plans`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ friendId, title, comments, meetTime, location }),
@@ -104,7 +104,7 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 	}
 
 	async function cancelPlan(id: string): Promise<PlanData[]> {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/plans/${id}`, { method: "DELETE" });
+		const response = await authFetch(`/api/plans/${id}`, { method: "DELETE" });
 
 		if (!response.ok) {
 			const data = await response.json();
@@ -115,7 +115,7 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 	}
 
 	async function updatePlanStatus(id: string, response: "accepted" | "declined"): Promise<PlanData[]> {
-		const fetchResponse = await authFetch(`${import.meta.env.VITE_API_URL}/api/plans/${id}/respond`, { method: "PATCH", body: JSON.stringify({ response }) });
+		const fetchResponse = await authFetch(`/api/plans/${id}/respond`, { method: "PATCH", body: JSON.stringify({ response }) });
 
 		if (!fetchResponse.ok) {
 			const data = await fetchResponse.json();

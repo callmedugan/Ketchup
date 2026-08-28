@@ -98,11 +98,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 	}
 
 	async function updateProfile(updates: { bio: string; timezone: string; avatarUrl: string }): Promise<User> {
-		const response = await authFetch(`${import.meta.env.VITE_API_URL}/api/users`, {
-			method: "PUT",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(updates),
-		});
+		const response = await authFetch("/api/users", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updates) });
 
 		if (!response.ok) {
 			const data = await response.json();
