@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@theme {
+	/* ================================================================ */
+	/* Brand */
+	/* ================================================================ */
+
+	--color-brand-red: #943b32;
+	--color-brand-red-dark: #7f2f29;
+	--color-brand-red-light: #c77b70;
+
+	--color-brand-text: #463b33;
+	--color-brand-muted: #786d65;
+
+	/* ================================================================ */
+	/* Surfaces */
+	/* ================================================================ */
+
+	--color-brand-page: #f7f1e5;
+	--color-brand-surface: #faf7f0;
+	--color-brand-card: #fffdf9;
+
+	/* ================================================================ */
+	/* Accent / decorative */
+	/* ================================================================ */
+
+	--color-brand-cream: #fff3d6;
+	--color-brand-pink: #f3d6d1;
+	--color-brand-pink-light: #fff7f2;
+
+	/* ================================================================ */
+	/* Corkboard */
+	/* ================================================================ */
+
+	--color-brand-cork: #b8794f;
+}
+
+@utility card {
+	@apply rounded-xl border border-stone-200 bg-brand-card shadow-sm;
+}
+
+@utility btn-primary {
+	@apply shrink-0 rounded-xl bg-brand-red px-3 py-2 text-xs font-bold text-white shadow-sm transition;
+	@apply hover:bg-brand-red-dark;
+	@apply active:scale-[0.97] active:bg-brand-red-dark active:brightness-95;
+	@apply sm:px-4 sm:py-2.5 sm:text-sm;
+	@apply disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+@utility btn-secondary {
+	@apply rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-bold text-brand-text transition;
+	@apply hover:bg-brand-surface;
+	@apply active:scale-[0.97] active:bg-stone-100;
+	@apply sm:px-4 sm:py-2.5 sm:text-sm;
+	@apply disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+@utility btn-danger {
+	@apply rounded-xl border border-red-700 px-3 py-2 text-xs font-bold text-red-600 transition;
+	@apply hover:bg-red-50;
+	@apply active:scale-[0.97] active:bg-red-100;
+	@apply sm:px-4 sm:py-2.5 sm:text-sm;
+	@apply disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+@utility plan-label {
+	@apply w-12 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-brand-muted;
+	@apply sm:w-14 sm:text-xs;
+}
+
+@utility plan-input-field {
+	@apply w-full rounded-lg border border-stone-300 bg-brand-surface px-3 py-2 text-xs font-medium text-brand-text outline-none transition;
+	@apply placeholder:font-normal placeholder:text-stone-400;
+	@apply focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20;
+	@apply sm:text-sm;
+}
+
+@utility modal-close-btn {
+	@apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full pb-1 text-xl text-brand-cream transition;
+	@apply hover:bg-white/10 hover:text-white;
+	@apply active:scale-90 active:bg-white/15;
+}
+
+/* friends */
+
+@utility friend-info-label {
+	@apply w-16 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-brand-muted;
+	@apply sm:w-20 sm:text-xs;
+}
+
+/* for split view pages */
+
+.list-item {
+	@apply flex w-full items-center justify-between rounded-xl border border-stone-200 bg-brand-card p-3 text-left transition;
+	@apply hover:border-stone-300 hover:shadow-sm;
+	@apply active:scale-[0.99] active:bg-stone-50;
+	@apply sm:p-3.5;
+}
+
+.list-item-selected {
+	@apply border-brand-red-light bg-brand-pink-light shadow-sm ring-1 ring-brand-red/10;
+}
+
+@keyframes float-notification {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+
+	50% {
+		transform: translateY(-3px);
+	}
+}
+
+.animate-float-notification {
+	animation: float-notification 2.5s ease-in-out infinite;
+}
