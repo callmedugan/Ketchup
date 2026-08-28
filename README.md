@@ -106,3 +106,10 @@ Instead of coordinating schedules manually, you can **see when you're both free 
 ## Status
 
 Ketchup is actively being developed. Current work is focused on improving the production deployment, mobile experience, and overall application architecture.
+
+Ketchup was originally developed as separate frontend and backend repositories before being consolidated into this monorepo.
+
+- [Ketchup Frontend]https://github.com/callmedugan/Ketchup-Frontend
+- [Ketchup Backend]https://github.com/callmedugan/Ketchup-Backend
+
+These repositories contain the earlier development history of the project.
