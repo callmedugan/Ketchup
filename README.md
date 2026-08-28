@@ -6,7 +6,7 @@
 
 Users can share their availability, connect with friends, and quickly see when their schedules overlap — taking the back-and-forth out of making plans.
 
-### [Try Ketchup Live](https://ketchup-frontend.vercel.app/)
+### [Try Ketchup Live]https://api.callmedugan.dev
 
 ## Features
 
