@@ -6,7 +6,7 @@
 
 Users can share their availability, connect with friends, and quickly see when their schedules overlap — taking the back-and-forth out of making plans.
 
-### [Try Ketchup Live]https://ketchup.callmedugan.dev
+### [Try Ketchup Live](https://ketchup.callmedugan.dev)
 
 ## Features
 
@@ -42,7 +42,7 @@ Users can share their availability, connect with friends, and quickly see when t
 
 - AWS EC2
 - Caddy
-- Vercel
+- systemd
 
 ## Project Structure
 
@@ -109,7 +109,7 @@ Ketchup is actively being developed. Current work is focused on improving the pr
 
 Ketchup was originally developed as separate frontend and backend repositories before being consolidated into this monorepo.
 
-- [Ketchup Frontend]https://github.com/callmedugan/Ketchup-Frontend
-- [Ketchup Backend]https://github.com/callmedugan/Ketchup-Backend
+- [Ketchup Frontend](https://github.com/callmedugan/Ketchup-Frontend)
+- [Ketchup Backend](https://github.com/callmedugan/Ketchup-Backend)
 
 These repositories contain the earlier development history of the project.
