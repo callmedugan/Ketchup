@@ -1,4 +1,4 @@
-import { Schedule, ScheduleRepeatType, scheduleRepeatTypeRank, UserLogin } from "./db/schema.js";
+import { ScheduleRecord, ScheduleRepeatType, scheduleRepeatTypeRank, UserLogin } from "./db/schema.js";
 import { Request, Response, NextFunction } from "express";
 import { BadRequestError, NotFoundError, ForbiddenError, UnauthorizedError, ConflictError } from "./error.js";
 import {
@@ -404,47 +404,6 @@ export async function handlerGetSchedules(req: Request, res: Response) {
 	res.status(200).json(result);
 }
 
-export async function handlerCompareUsersSchedules(req: Request, res: Response) {
-	// validate user
-	const userId1 = req.userId;
-	if (!userId1 || userId1 === "") throw new UnauthorizedError("userId1 cannot be blank");
-
-	// validate body
-	const body = compareSchedulesSchema.safeParse(req.body);
-	if (!body.success) throw new BadRequestError(body.error.issues[0]?.message ?? "userId2 cannot be blank");
-
-	// call db
-	const user1Schedules = await getScheduleByUserFromDb(userId1);
-	if (user1Schedules == undefined) throw new Error("user 1 has no schedule or failed to retrieve schedules");
-
-	const user2Schedules = await getScheduleByUserFromDb(body.data.userId2);
-	if (user2Schedules == undefined) throw new Error("user 2 has no schedule or failed to retrieve schedules");
-
-	// find overlaps
-	const allOverlaps: Schedule[] = [];
-
-	for (const first of user1Schedules) {
-		for (const second of user2Schedules) {
-			const overlap = getScheduleOverlap(first, second);
-			if (overlap != undefined) allOverlaps.push(overlap);
-		}
-	}
-
-	// build result
-	const result = allOverlaps.map((schedule) => ({
-		id: schedule.id,
-		createdAt: schedule.createdAt,
-		updatedAt: schedule.updatedAt,
-		repeatType: schedule.repeatType,
-		userId: schedule.userId,
-		startTime: schedule.startTime,
-		endTime: schedule.endTime,
-	}));
-
-	// return
-	res.status(200).send(result);
-}
-
 //#endregion
 
 /* ========================================================================= */
@@ -697,13 +656,13 @@ export async function handlerGetFriendsOverlap(req: Request, res: Response) {
 
 	// call db for user
 	const userSchedule = await getScheduleByUserFromDb(userId);
-	if (userSchedule == undefined) throw new Error("User has no schedule or failed to retrieve schedules");
+	if (userSchedule === undefined) throw new Error("Failed to retrieve user schedules");
+	if (userSchedule.length === 0) return res.status(200).json([]);
 
 	// call db for friends
 	const friendSchedules = await getAllFriendSchedules(userId);
-	if (friendSchedules == undefined) {
-		throw new Error("User has no friends, friends have no schedules, or failed to retrieve friends schedules");
-	}
+	if (friendSchedules == undefined) throw new Error("Failed to retrieve friends schedules");
+	if (friendSchedules.length === 0) return res.status(200).json([]);
 
 	// find overlaps
 	const overlapsInDateRange: FriendScheduleRecord[] = [];
@@ -730,7 +689,7 @@ export async function handlerGetFriendsOverlap(req: Request, res: Response) {
 				repeatType: overlap.repeatType,
 				createdAt: friendAvailability.createdAt,
 				updatedAt: friendAvailability.updatedAt,
-				userScheduleIdMatched: userAvailability.id,
+				schedules: [userAvailability.id, friendAvailability.id],
 				timezone: userAvailability.timezone,
 			});
 		}
@@ -799,61 +758,20 @@ export async function handlerReset(req: Request, res: Response) {
 
 //#region schedule helpers
 
-export function getScheduleOverlap(first: Schedule, second: Schedule): Schedule | undefined {
-	const timeOverlap = getTimeOverlap({ start: first.startTime, end: first.endTime }, { start: second.startTime, end: second.endTime });
-
-	if (timeOverlap == undefined) return undefined;
-
-	const overlap: Schedule = {
-		repeatType: first.repeatType === second.repeatType ? first.repeatType : "once",
-		startTime: timeOverlap.start,
-		endTime: timeOverlap.end,
-		userId: "null",
-		timezone: first.timezone,
-	};
-
-	return overlap;
-}
-
-type TimeRange = { start: Date; end: Date };
-
-function getTimeOverlap(a: TimeRange, b: TimeRange): TimeRange | undefined {
-	const aStart = a.start.getTime();
-	const aEnd = a.end.getTime();
-	const bStart = b.start.getTime();
-	const bEnd = b.end.getTime();
-
-	if (isNaN(aStart) || isNaN(aEnd) || isNaN(bStart) || isNaN(bEnd)) {
-		return undefined;
-	}
-
-	const maxStart = Math.max(aStart, bStart);
-	const minEnd = Math.min(aEnd, bEnd);
-
-	if (maxStart < minEnd) {
-		return { start: new Date(maxStart), end: new Date(minEnd) };
-	}
-
-	return undefined;
-}
-
 type TimeRangeRepeating = { start: Date; end: Date; repeatType: ScheduleRepeatType; timezone: string };
 
 function _dateToMinutes(date: Date, timezone: string) {
 	const zonedDate = toZonedTime(date, timezone);
-
 	return getHours(zonedDate) * 60 + getMinutes(zonedDate);
 }
 
 function _getDay(date: Date, timezone: string) {
 	const zonedDate = toZonedTime(date, timezone);
-
 	return getDay(zonedDate);
 }
 
 function _minutesToDate(minutes: number, date: Date, timezone: string) {
 	const zonedDate = toZonedTime(date, timezone);
-
 	return set(zonedDate, { hours: Math.floor(minutes / 60), minutes: minutes % 60, seconds: 0, milliseconds: 0 });
 }
 

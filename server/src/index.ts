@@ -1,7 +1,6 @@
 import express from "express";
 import {
 	handlerCancelPlan,
-	handlerCompareUsersSchedules,
 	handlerCreatePlans,
 	handlerCreateSchedule,
 	handlerCreateUser,
@@ -25,7 +24,7 @@ import {
 	handlerBlockUser,
 	handlerUnblockUser,
 } from "./handlers.js";
-import { middlewareAuthRateLimiter, middlewareAuthentication } from "./middleware.js";
+import { middlewareLoginLimiter, middlewareAuthentication, middlewareRegisterLimiter } from "./middleware.js";
 import cors from "cors";
 import path from "path";
 
@@ -48,14 +47,15 @@ app.post("/admin/reset", handlerReset);
 //                        handlers
 /* ========================================================================= */
 
-app.post("/auth/login", middlewareAuthRateLimiter, handlerLogin);
-app.post("/auth/refresh", middlewareAuthRateLimiter, handlerRefresh);
+//auth
+app.post("/auth/login", middlewareLoginLimiter, handlerLogin);
+app.post("/auth/refresh", handlerRefresh);
 app.post("/auth/logout", middlewareAuthentication, handlerLogout);
+app.post("/api/users", middlewareRegisterLimiter, handlerCreateUser);
 
+//users
 app.get("/api/users", middlewareAuthentication, handlerSearchForUsers);
-app.post("/api/users", handlerCreateUser);
 app.get("/api/profile", middlewareAuthentication, handlerGetProfile);
-app.get("/api/users/overlap", middlewareAuthentication, handlerCompareUsersSchedules);
 app.put("/api/users", middlewareAuthentication, handlerUpdateUser);
 
 //friends

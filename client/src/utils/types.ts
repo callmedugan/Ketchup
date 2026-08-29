@@ -109,7 +109,7 @@ export function getFriendsFromParsedJson(data: unknown): Friend[] | undefined {
 //#region matched schedules
 
 // backend
-export const matchedScheduleDataSchema = scheduleSchema.extend({ userScheduleIdMatched: z.uuid() });
+export const matchedScheduleDataSchema = scheduleSchema.extend({ schedules: z.array(z.uuid()) });
 
 export type MatchedScheduleData = z.infer<typeof matchedScheduleDataSchema>;
 

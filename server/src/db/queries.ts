@@ -4,7 +4,6 @@ import {
 	Friend,
 	FriendDetails,
 	friends,
-	FriendStatusType,
 	Plan,
 	PlanRecord,
 	plans,
@@ -291,7 +290,7 @@ export async function checkUsersAreFriendsFromDb(user1: string, user2: string): 
 }
 
 //added later
-export type FriendScheduleRecord = { userScheduleIdMatched?: string | null } & ScheduleRecord;
+export type FriendScheduleRecord = { schedules?: string[] } & ScheduleRecord;
 
 // gets schedules where a relationship exists between user and any oher user
 export async function getAllFriendSchedules(userId: string): Promise<FriendScheduleRecord[]> {

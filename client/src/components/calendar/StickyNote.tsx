@@ -85,7 +85,7 @@ function getValidAndSortedOverlaps(matchedSchedules: MatchedSchedule[], schedule
 	const users = new Set();
 	for (const s of matchedSchedules) {
 		//only check matching ids
-		if (s.userScheduleIdMatched !== scheduleData.id) continue;
+		if (!s.schedules.includes(scheduleData.id)) continue;
 
 		// Note date cannot be before the match starts
 		if (isBefore(startOfDay(noteDate), startOfDay(s.startTime))) continue;

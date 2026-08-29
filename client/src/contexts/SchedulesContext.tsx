@@ -96,7 +96,7 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 		//try parse
 		const data = await response.json();
 		const scheduleData = getMatchedSchedulesFromParsedJson(data);
-		if (scheduleData == null) throw new Error("Schedule data invalid");
+		if (scheduleData == null) throw new Error("Matched schedule data invalid");
 
 		//set the raw useEffect
 		setMatchedSchedulesData(scheduleData);

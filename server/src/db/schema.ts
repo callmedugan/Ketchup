@@ -1,6 +1,5 @@
 import { primaryKey, uuid, pgTable, text, timestamp, varchar, pgEnum } from "drizzle-orm/pg-core";
 import { BIO_MAX_LENGTH, COMMENTS_MAX_LENGTH, EMAIL_MAX_LENGTH, TITLE_MAX_LENGTH } from "../data/constants.js";
-import z from "zod";
 
 /* ========================================================================= */
 //                        users
@@ -87,15 +86,11 @@ export const refreshTokens = pgTable("refresh_tokens", {
 /* ========================================================================= */
 //                        friends
 /* ========================================================================= */
-//zod
-export const FriendStatusSchema = z.enum(["requested", "accepted", "declined", "blocked"]);
 //drizzle
 export const friendStatusEnum = pgEnum("friend_status", ["requested", "accepted", "declined", "blocked"]);
 export type Friend = typeof friends.$inferInsert;
 export type FriendDetails = Pick<typeof friends.$inferSelect, "status"> &
 	Pick<typeof users.$inferSelect, "id" | "name" | "createdAt" | "updatedAt" | "bio" | "timezone" | "avatarUrl"> & { requestDirection: "sent" | "received" };
-//actual type
-export type FriendStatusType = z.infer<typeof FriendStatusSchema>;
 
 export const friends = pgTable(
 	"friends",
@@ -117,19 +112,10 @@ export const friends = pgTable(
 	(table) => [primaryKey({ columns: [table.requesterId, table.responderId] })],
 );
 
-export function isValidFriendStatus(obj: any): obj is FriendStatusType {
-	if (!obj || typeof obj !== "string") return false;
-
-	if (obj === "requested" || "accepted" || "declined" || "blocked") return true;
-
-	return false;
-}
-
 /* ========================================================================= */
 //                        plans
 /* ========================================================================= */
 
-type PlanStatusType = "declined" | "pending" | "confirmed" | "cancelled";
 export const PlanStatusEnum = pgEnum("plan_status", ["declined", "pending", "confirmed", "cancelled"]);
 
 export type Plan = typeof plans.$inferInsert;
@@ -156,10 +142,18 @@ export const plans = pgTable("plans", {
 	location: varchar("location", { length: 255 }),
 });
 
-export function isValidPlanStatus(obj: any): obj is PlanStatusType {
-	if (!obj || typeof obj !== "string") return false;
+// used to match a plan to scheduleIds (creator schedule and then any other friend schedules)
+export const planSchedules = pgTable(
+	"plan_schedules",
+	{
+		planId: uuid("plan_id")
+			.notNull()
+			.references(() => plans.id, { onDelete: "cascade" }),
 
-	if (obj === "declined" || "pending" || "confirmed" || "cancelled") return true;
-
-	return false;
-}
+		scheduleId: uuid("schedule_id")
+			.notNull()
+			.references(() => schedules.id, { onDelete: "cascade" }),
+	},
+	// prevents duplicate pairs
+	(table) => [primaryKey({ columns: [table.planId, table.scheduleId] })],
+);

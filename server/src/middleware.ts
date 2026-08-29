@@ -29,10 +29,18 @@ export async function middlewareAuthentication(req: Request, res: Response, next
 }
 
 // user ip is stored in memory, so it will reset on server restart and this can be bypassed by someone using ip rotation
-export const middlewareAuthRateLimiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minute ban window
+export const middlewareLoginLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minute
 	limit: 5, // Limit each IP to 5 failed attempts per window
-	message: { status: 429, error: "Too many login attempts. Please try again after 15 minutes." },
+	message: { status: 429, error: "Too many login attempts. Try again later." },
 	standardHeaders: "draft-7",
 	legacyHeaders: false,
+});
+
+export const middlewareRegisterLimiter = rateLimit({
+	windowMs: 60 * 60 * 1000, // 1 hour
+	limit: 5,
+	standardHeaders: "draft-8",
+	legacyHeaders: false,
+	message: { status: 429, error: "Too many accounts created from this connection. Try again later." },
 });
