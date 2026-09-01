@@ -146,7 +146,14 @@ export default function Calendar() {
 		return (
 			<div className="flex gap-3 overflow-x-auto p-3 md:flex-col md:overflow-visible">
 				{schedules.map((schedule) => (
-					<StickyNote key={schedule.id} scheduleData={schedule} noteDate={day} onDeleted={handleScheduleDeleted} />
+					<StickyNote
+						key={`${schedule.id}-${day.toISOString()}`}
+						start={schedule.startTime}
+						end={schedule.endTime}
+						id={schedule.id}
+						noteDate={day}
+						onDeleted={handleScheduleDeleted}
+					/>
 				))}
 			</div>
 		);
@@ -334,7 +341,14 @@ export default function Calendar() {
 					<ScrollableContainer direction="horizontal">
 						<div className="flex h-full gap-2.5 p-3">
 							{daySchedules.map((schedule) => (
-								<StickyNote key={`${schedule.id}-${day.toISOString()}`} scheduleData={schedule} noteDate={day} onDeleted={handleScheduleDeleted} />
+								<StickyNote
+									key={`${schedule.id}-${day.toISOString()}`}
+									start={schedule.startTime}
+									end={schedule.endTime}
+									id={schedule.id}
+									noteDate={day}
+									onDeleted={handleScheduleDeleted}
+								/>
 							))}
 						</div>
 					</ScrollableContainer>

@@ -8,7 +8,7 @@ import PlansSplitView from "../components/plans/PlansSplitView";
 export function PlansPage() {
 	const location = useLocation();
 
-	const overlap = location.state?.overlap as MatchedSchedule | undefined;
+	const overlap = location.state?.newPlanOverlap as MatchedSchedule | undefined;
 	const [showNewPlanModal, setShowNewPlanModal] = useState(overlap !== undefined);
 
 	return (

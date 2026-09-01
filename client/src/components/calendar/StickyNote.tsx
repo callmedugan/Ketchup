@@ -2,20 +2,19 @@ import { format, isBefore, isSameDay, set, startOfDay } from "date-fns";
 import { useState } from "react";
 import OverlapModal from "./OverlapModal";
 import { useSchedule } from "../../contexts/SchedulesContext";
-import type { MatchedSchedule, Schedule } from "../../utils/types";
 
-type StickyNoteProps = { scheduleData: Schedule; noteDate: Date; onDeleted: () => void };
+type StickyNoteProps = { start: Date; end: Date; id: string; noteDate: Date; onDeleted: () => void };
 
-export default function StickyNote({ scheduleData, noteDate, onDeleted }: StickyNoteProps) {
+export default function StickyNote({ start, end, id, noteDate, onDeleted }: StickyNoteProps) {
 	const { matchedSchedules } = useSchedule();
 	const [isOpen, setIsOpen] = useState(false);
 
 	//create a date for the beginning and end
-	const noteStartTime = set(noteDate, { hours: scheduleData.startTime.getHours(), minutes: scheduleData.startTime.getMinutes() });
-	const noteEndTime = set(noteDate, { hours: scheduleData.endTime.getHours(), minutes: scheduleData.endTime.getMinutes() });
-	const hasPassed = noteEndTime <= new Date();
+	const normalizedStart = set(noteDate, { hours: start.getHours(), minutes: start.getMinutes() });
+	const normalizedEnd = set(noteDate, { hours: end.getHours(), minutes: end.getMinutes() });
+	const hasPassed = normalizedEnd <= new Date();
 
-	const { overlapsForThisDay, overlapCount } = getValidAndSortedOverlaps(matchedSchedules, scheduleData, noteDate);
+	const { overlapsForThisDay, overlapCount } = getValidAndSortedOverlaps();
 
 	return (
 		<>
@@ -42,17 +41,17 @@ export default function StickyNote({ scheduleData, noteDate, onDeleted }: Sticky
 				<div className="absolute right-0 top-0 h-4 w-4 bg-[#e8c95b] [clip-path:polygon(0_0,100%_0,100%_100%)]" />
 
 				{/* Time */}
-				<div className="absolute left-2.5 right-2.5 top-3.5 flex flex-col gap-1 md:left-3 md:right-3">
+				<div className="absolute left-2.5 right-2.5 top-4 flex flex-col gap-1 md:left-3 md:right-3">
 					<div className="flex items-baseline justify-between gap-2">
 						<span className="text-[7px] font-bold uppercase tracking-wide text-[#8a763d] md:text-[9px]">Start</span>
 
-						<span className="text-[10px] font-bold text-[#66531c] md:text-xs">{format(scheduleData.startTime, "p")}</span>
+						<span className="text-[10px] font-bold text-[#66531c] md:text-xs">{format(start, "p")}</span>
 					</div>
 
 					<div className="flex items-baseline justify-between gap-2">
 						<span className="text-[7px] font-bold uppercase tracking-wide text-[#8a763d] md:text-[9px]">End</span>
 
-						<span className="text-[10px] font-bold text-[#66531c] md:text-xs">{format(scheduleData.endTime, "p")}</span>
+						<span className="text-[10px] font-bold text-[#66531c] md:text-xs">{format(end, "p")}</span>
 					</div>
 				</div>
 
@@ -66,10 +65,10 @@ export default function StickyNote({ scheduleData, noteDate, onDeleted }: Sticky
 			{/* overlap modal */}
 			{isOpen && (
 				<OverlapModal
-					noteSchedule={scheduleData}
+					id={id}
 					hasPassed={hasPassed}
-					noteStartTime={noteStartTime}
-					noteEndTime={noteEndTime}
+					start={normalizedStart}
+					end={normalizedEnd}
 					noteOverlaps={overlapsForThisDay}
 					onClose={() => setIsOpen(false)}
 					onDeleted={onDeleted}
@@ -77,34 +76,34 @@ export default function StickyNote({ scheduleData, noteDate, onDeleted }: Sticky
 			)}
 		</>
 	);
-}
 
-function getValidAndSortedOverlaps(matchedSchedules: MatchedSchedule[], scheduleData: Schedule, noteDate: Date) {
-	// get number of unique users and overlaps for the day
-	const preSortedOverlaps = [];
-	const users = new Set();
-	for (const s of matchedSchedules) {
-		//only check matching ids
-		if (!s.schedules.includes(scheduleData.id)) continue;
+	function getValidAndSortedOverlaps() {
+		// get number of unique users and overlaps for the day
+		const preSortedOverlaps = [];
+		const users = new Set();
+		for (const s of matchedSchedules) {
+			//only check matching ids
+			if (!s.schedules.includes(id)) continue;
 
-		// Note date cannot be before the match starts
-		if (isBefore(startOfDay(noteDate), startOfDay(s.startTime))) continue;
+			// Note date cannot be before the match starts
+			if (isBefore(startOfDay(noteDate), startOfDay(s.startTime))) continue;
 
-		// Daily = every day after start
-		// Once = exact date only
-		// Weekly = matching weekday after start
-		if (
-			s.repeatType === "daily" ||
-			(s.repeatType === "once" && isSameDay(s.startTime, noteDate)) ||
-			(s.repeatType === "weekly" && s.startTime.getDay() === noteDate.getDay())
-		) {
-			preSortedOverlaps.push(s);
-			users.add(s.userId);
+			// Daily = every day after start
+			// Once = exact date only
+			// Weekly = matching weekday after start
+			if (
+				s.repeatType === "daily" ||
+				(s.repeatType === "once" && isSameDay(s.startTime, noteDate)) ||
+				(s.repeatType === "weekly" && s.startTime.getDay() === noteDate.getDay())
+			) {
+				preSortedOverlaps.push(s);
+				users.add(s.userId);
+			}
 		}
+		//finally
+		return {
+			overlapsForThisDay: preSortedOverlaps.sort((a, b) => a.startTime.getTime() - a.endTime.getTime() - (b.startTime.getTime() - b.endTime.getTime())),
+			overlapCount: users.size,
+		};
 	}
-	//finally
-	return {
-		overlapsForThisDay: preSortedOverlaps.sort((a, b) => a.startTime.getTime() - a.endTime.getTime() - (b.startTime.getTime() - b.endTime.getTime())),
-		overlapCount: users.size,
-	};
 }

@@ -2,7 +2,7 @@ import { differenceInMinutes, format } from "date-fns";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type { MatchedSchedule, Schedule } from "../../utils/types";
+import type { MatchedSchedule } from "../../utils/types";
 import { useSchedule } from "../../contexts/SchedulesContext";
 
 import Avatar from "../common/Avatar";
@@ -12,16 +12,16 @@ import ModalHeader from "../common/ModalHeader";
 import HoldButton from "../common/HoldButton";
 
 type OverlapModalProps = {
-	noteSchedule: Schedule;
-	noteOverlaps: MatchedSchedule[];
-	noteStartTime: Date;
-	noteEndTime: Date;
+	id: string;
+	start: Date;
+	end: Date;
 	hasPassed: boolean;
+	noteOverlaps: MatchedSchedule[];
 	onClose: () => void;
 	onDeleted: () => void;
 };
 
-export default function OverlapModal({ noteSchedule, noteOverlaps, noteStartTime, noteEndTime, hasPassed, onClose, onDeleted }: OverlapModalProps) {
+export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, onClose, onDeleted }: OverlapModalProps) {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +34,7 @@ export default function OverlapModal({ noteSchedule, noteOverlaps, noteStartTime
 		setLoading(true);
 		setError(null);
 
-		deleteUserSchedule(noteSchedule.id)
+		deleteUserSchedule(id)
 			.then(() => {
 				onClose();
 				onDeleted();
@@ -53,10 +53,10 @@ export default function OverlapModal({ noteSchedule, noteOverlaps, noteStartTime
 
 			{/* Schedule info */}
 			<div className={`shrink-0 border-b border-stone-200 px-4 py-3 sm:px-5 ${hasPassed ? "bg-stone-50" : "bg-brand-surface"}`}>
-				<p className={`text-sm font-bold ${hasPassed ? "text-brand-muted/70" : "text-brand-text"}`}>{format(noteStartTime, "EEEE, MMMM d")}</p>
+				<p className={`text-sm font-bold ${hasPassed ? "text-brand-muted/70" : "text-brand-text"}`}>{format(start, "EEEE, MMMM d")}</p>
 
 				<p className={`mt-0.5 text-xs font-medium sm:text-sm ${hasPassed ? "text-brand-muted/60" : "text-brand-muted"}`}>
-					{format(noteStartTime, "p")} – {format(noteEndTime, "p")}
+					{format(start, "p")} – {format(end, "p")}
 				</p>
 			</div>
 
@@ -104,7 +104,9 @@ export default function OverlapModal({ noteSchedule, noteOverlaps, noteStartTime
 					type="button"
 					disabled={hasPassed}
 					onClick={() => {
-						navigate("/plans", { state: { overlap } });
+						//adjust the overlap to the specific day
+						const newPlanOverlap: MatchedSchedule = { ...overlap, startTime: start, endTime: end };
+						navigate("/plans", { state: { newPlanOverlap } });
 					}}
 					className={`mt-2.5 w-full rounded-lg px-3 py-2 text-xs font-bold transition active:scale-[0.98] sm:text-sm ${
 						hasPassed ? "cursor-not-allowed bg-stone-200 text-brand-muted/70" : "bg-brand-red text-white hover:bg-brand-red-dark active:bg-brand-red-dark"
