@@ -1,32 +1,21 @@
 import express from "express";
-import {
-	handlerCancelPlan,
-	handlerCreatePlans,
-	handlerCreateSchedule,
-	handlerCreateUser,
-	handlerDeleteSchedule,
-	handlerError,
-	handlerGetFriends,
-	handlerGetFriendsOverlap,
-	handlerGetPlans,
-	handlerGetProfile,
-	handlerGetSchedules,
-	handlerSearchForUsers,
-	handlerLogin,
-	handlerLogout,
-	handlerRefresh,
-	handlerRequestFriend,
-	handlerReset,
-	handlerRespondToPlan,
-	handlerRespondToFriendRequest,
-	handlerRemoveFriend,
-	handlerUpdateUser,
-	handlerBlockUser,
-	handlerUnblockUser,
-} from "./handlers.js";
+import { handlerError, handlerReset } from "./handlers/error.js";
 import { middlewareLoginLimiter, middlewareAuthentication, middlewareRegisterLimiter } from "./middleware.js";
 import cors from "cors";
 import path from "path";
+import { handlerCreateUser, handlerLogin, handlerLogout, handlerRefresh } from "./handlers/auth.js";
+import { handlerGetProfile, handlerSearchForUsers, handlerUpdateUser } from "./handlers/users.js";
+import {
+	handlerBlockUser,
+	handlerGetFriends,
+	handlerGetFriendsOverlap,
+	handlerRemoveFriend,
+	handlerRequestFriend,
+	handlerRespondToFriendRequest,
+	handlerUnblockUser,
+} from "./handlers/friends.js";
+import { handlerCreateSchedule, handlerDeleteSchedule, handlerGetSchedules } from "./handlers/schedules.js";
+import { handlerCancelPlan, handlerCreatePlans, handlerGetPlans, handlerRespondToPlan } from "./handlers/plans.js";
 
 const app = express();
 
@@ -34,8 +23,7 @@ const app = express();
 const clientPath = path.resolve(process.cwd(), "../client/dist");
 
 //prevents browser blocking page from cors policy
-const allowedOrigins = [process.env.FRONTEND_URL, process.env.DEV_FRONTEND_URL].filter((origin): origin is string => Boolean(origin));
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cors({ origin: process.env.DEV_FRONTEND_URL, credentials: true }));
 
 // allow json and limit to 100kb of data
 app.use(express.json({ limit: "100kb" }));
