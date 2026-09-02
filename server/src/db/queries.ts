@@ -50,22 +50,19 @@ export async function getUserById(id: string): Promise<UserPrivate | undefined> 
 	return result;
 }
 
-//if a user is provided, returns all except that user (for searching for friends)
-export async function searchForUsersInDb(userId: string, search: string): Promise<UserPublic[]> {
-	//remove whitespace
-	const normalizedSearch = search.trim();
-
+// searches for a user name pr email if exact email is provided
+export async function searchForUsersInDb(userId: string, cleanSearch: string): Promise<UserPublic[]> {
 	return await db
 		.select({ id: users.id, name: users.name, timezone: users.timezone, avatarUrl: users.avatarUrl, bio: users.bio })
 		.from(users)
-		.where(and(not(eq(users.id, userId)), or(ilike(users.name, `%${normalizedSearch}%`), eq(users.email, normalizedSearch.toLowerCase()))))
+		.where(and(not(eq(users.id, userId)), or(ilike(users.name, `%${cleanSearch}%`), eq(users.email, cleanSearch.toLowerCase()))))
 		.orderBy(
 			sql`
 			CASE
-				WHEN lower(${users.name}) = lower(${normalizedSearch}) THEN 1
-				WHEN lower(${users.name}) LIKE lower(${normalizedSearch + "%"}) THEN 2
-				WHEN lower(${users.name}) LIKE lower(${"%" + normalizedSearch + "%"}) THEN 3
-				WHEN lower(${users.email}) = lower(${normalizedSearch}) THEN 4
+				WHEN lower(${users.name}) = lower(${cleanSearch}) THEN 1
+				WHEN lower(${users.name}) LIKE lower(${cleanSearch + "%"}) THEN 2
+				WHEN lower(${users.name}) LIKE lower(${"%" + cleanSearch + "%"}) THEN 3
+				WHEN lower(${users.email}) = lower(${cleanSearch}) THEN 4
 				ELSE 5
 			END
 		`,

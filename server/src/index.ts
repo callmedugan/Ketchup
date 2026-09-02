@@ -1,9 +1,9 @@
 import express from "express";
-import { handlerError, handlerReset } from "./handlers/error.js";
-import { middlewareLoginLimiter, middlewareAuthentication, middlewareRegisterLimiter } from "./middleware.js";
+import { handlerError } from "./handlers/error.js";
+import { middlewareLoginLimiter, middlewareAuthentication, middlewareRegisterLimiter, noSniffHeader, middlewareApiLimiter } from "./middleware.js";
 import cors from "cors";
 import path from "path";
-import { handlerCreateUser, handlerLogin, handlerLogout, handlerRefresh } from "./handlers/auth.js";
+import { handlerCreateUser, handlerLogin, handlerLogout, handlerRefresh, handlerReset } from "./handlers/auth.js";
 import { handlerGetProfile, handlerSearchForUsers, handlerUpdateUser } from "./handlers/users.js";
 import {
 	handlerBlockUser,
@@ -27,6 +27,12 @@ app.use(cors({ origin: process.env.DEV_FRONTEND_URL, credentials: true }));
 
 // allow json and limit to 100kb of data
 app.use(express.json({ limit: "100kb" }));
+
+// nosniff header
+app.use(noSniffHeader);
+
+// limit overall traffic
+app.use(middlewareApiLimiter);
 
 //dev
 app.post("/admin/reset", handlerReset);

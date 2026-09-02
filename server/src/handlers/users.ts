@@ -4,7 +4,8 @@ import { BadRequestError, UnauthorizedError } from "../error.js";
 import { getUserById, searchForUsersInDb, updateUserProfileInDb } from "../db/queries.js";
 import { logInfo } from "./logging.js";
 
-const userSearchSchema = z.object({ search: z.string().trim().min(1, "Search is required") });
+// have to be careful with user input - drizzle also uses string as a parameter to prevent sql injection
+const userSearchSchema = z.object({ search: z.string().trim().min(1, "Search is required").max(50, "Search is too long").lowercase() });
 const updateUserSchema = z.object({ bio: z.string().trim().max(300), timezone: z.string().trim(), avatarUrl: z.string().trim() });
 
 export async function handlerSearchForUsers(req: Request, res: Response) {

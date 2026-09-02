@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import { BadRequestError, NotFoundError, ForbiddenError, UnauthorizedError, ConflictError } from "../error.js";
-import { deleteDb } from "../db/queries.js";
 import { logError, logWarn } from "./logging.js";
 
 export function handlerError(err: Error, req: Request, res: Response, next: NextFunction) {
@@ -33,15 +32,4 @@ export function handlerError(err: Error, req: Request, res: Response, next: Next
 	}
 
 	res.status(status).json({ error: message });
-}
-
-export async function handlerReset(req: Request, res: Response) {
-	if (process.env.PLATFORM !== "dev") {
-		logWarn("database.reset_rejected", { platform: process.env.PLATFORM });
-		res.status(403).send();
-	} else {
-		await deleteDb();
-		logWarn("database.reset", { platform: process.env.PLATFORM });
-		res.status(200).send("Reset complete");
-	}
 }

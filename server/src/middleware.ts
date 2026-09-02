@@ -32,8 +32,9 @@ export async function middlewareAuthentication(req: Request, res: Response, next
 export const middlewareLoginLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 minute
 	limit: 5, // Limit each IP to 5 failed attempts per window
-	message: { status: 429, error: "Too many login attempts. Try again later." },
-	standardHeaders: "draft-7",
+	skipFailedRequests: true,
+	message: { status: 429, error: "Too many failed login attempts. Try again later." },
+	standardHeaders: "draft-8",
 	legacyHeaders: false,
 });
 
@@ -44,3 +45,17 @@ export const middlewareRegisterLimiter = rateLimit({
 	legacyHeaders: false,
 	message: { status: 429, error: "Too many accounts created from this connection. Try again later." },
 });
+
+export const middlewareApiLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	limit: 300, // 300 requests per IP per window
+	message: { status: 429, error: "Too many requests. Try again later." },
+	standardHeaders: "draft-8",
+	legacyHeaders: false,
+});
+
+//forces the browser to follow the MIME type in the Content-Type header instead of guessing - should be used API wide
+export function noSniffHeader(req: Request, res: Response, next: NextFunction) {
+	res.setHeader("X-Content-Type-Options", "nosniff");
+	return next();
+}

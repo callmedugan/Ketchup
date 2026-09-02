@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
-import { getUserByEmail, addUserToDb, createRefreshToken, getRefreshTokenUser, revokeToken } from "../db/queries.js";
+import { getUserByEmail, addUserToDb, createRefreshToken, getRefreshTokenUser, revokeToken, deleteDb } from "../db/queries.js";
 import { UnauthorizedError, BadRequestError, ConflictError } from "../error.js";
 import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, REFRESH_TOKEN_EXPIRATION_DAYS } from "../data/constants.js";
 import { checkPasswordHash, hashPassword, makeJWT, makeRefreshToken } from "../db/auth.js";
 import { UserLogin } from "../db/schema.js";
-import { logInfo } from "./logging.js";
+import { logInfo, logWarn } from "./logging.js";
 import z from "zod";
 
+// must use trimmed and lowercase email
 const createUserSchema = z.object({
 	email: z
 		.email("Email is invalid format")
@@ -23,6 +24,7 @@ const createUserSchema = z.object({
 	avatarUrl: z.string().trim().min(1, "Avatar url cannot be blank"),
 });
 
+// must use trimmed and lowercase email
 const loginSchema = z.object({
 	email: z.email("Email is invalid format").trim().toLowerCase().min(1, "Email cannot be blank"),
 	password: z.string().min(1, "Password cannot be blank"),
@@ -136,4 +138,19 @@ export async function handlerLogout(req: Request, res: Response) {
 
 	// return
 	res.status(200).send();
+}
+
+/* ========================================================================= */
+//                        other
+/* ========================================================================= */
+
+export async function handlerReset(req: Request, res: Response) {
+	if (process.env.PLATFORM !== "dev") {
+		logWarn("database.reset_rejected", { platform: process.env.PLATFORM });
+		res.status(403).send();
+	} else {
+		await deleteDb();
+		logWarn("database.reset", { platform: process.env.PLATFORM });
+		res.status(200).send("Reset complete");
+	}
 }
