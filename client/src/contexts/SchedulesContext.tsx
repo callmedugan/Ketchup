@@ -1,28 +1,26 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import {
-	getMatchedSchedulesFromParsedJson,
-	getScheduleFromParsedJson,
-	type MatchedSchedule,
-	type MatchedScheduleData,
-	type Schedule,
-	type ScheduleRepeatType,
-} from "../utils/types";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { getScheduleInstancesFromParsedJson, type ScheduleInstance, type ScheduleRepeatType } from "../utils/types";
 import { useAuth } from "./AuthContext";
-import { useFriends } from "./FriendsContext";
+import { endOfWeek, startOfWeek } from "date-fns";
 
 /* ========================================================================= */
 //                        context
 /* ========================================================================= */
 
 //#region context
+
 type ScheduleContextType = {
-	userSchedules: Schedule[];
-	getUserScheduleById: (id: string) => Schedule | undefined;
-	matchedSchedules: MatchedSchedule[];
-	fetchUserSchedules: () => Promise<Schedule[]>;
-	fetchMatchedSchedules: () => Promise<MatchedScheduleData[]>;
-	deleteUserSchedule: (id: string) => Promise<Schedule[]>;
-	addUserSchedule: (userId: string, date: string, startTime: string, endTime: string, repeatType: ScheduleRepeatType, timezone: string) => Promise<Schedule[]>;
+	scheduleInstances: ScheduleInstance[];
+	fetchScheduleInstances: (rangeStart?: Date, rangeEnd?: Date) => Promise<ScheduleInstance[]>;
+	deleteUserSchedule: (id: string) => Promise<ScheduleInstance[]>;
+	addUserSchedule: (
+		userId: string,
+		date: string,
+		startTime: string,
+		endTime: string,
+		repeatType: ScheduleRepeatType,
+		timezone: string,
+	) => Promise<ScheduleInstance[]>;
 };
 
 const ScheduleContext = createContext<ScheduleContextType | null>(null);
@@ -34,83 +32,69 @@ const ScheduleContext = createContext<ScheduleContextType | null>(null);
 /* ========================================================================= */
 
 //#region provider
-type ScheduleProviderProps = { children: ReactNode };
+
+type ScheduleProviderProps = {
+	children: ReactNode;
+};
 
 export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
-	//needs to be nested inside auth provider
 	const { user, authFetch } = useAuth();
-	//needs to be nested inside friends provider
-	const { friends } = useFriends();
 
-	const [userSchedules, setUserSchedules] = useState<Schedule[]>([]);
-	const [matchedSchedulesData, setMatchedSchedulesData] = useState<MatchedScheduleData[]>([]);
+	const [scheduleInstances, setScheduleInstances] = useState<ScheduleInstance[]>([]);
 
-	//fetch schedules when user updates
+	/* ========================================================================= */
+	// initial fetch
+	/* ========================================================================= */
+
 	useEffect(() => {
 		if (!user) {
-			setUserSchedules([]);
-			setMatchedSchedulesData([]);
+			setScheduleInstances([]);
 			return;
 		}
-		fetchUserSchedules();
-		fetchMatchedSchedules();
+
+		fetchScheduleInstances();
 	}, [user]);
 
-	//only build out the schedules if the data has been changed
-	const matchedSchedules: MatchedSchedule[] = useMemo(() => {
-		//add other fields
-		const result = [];
-		for (const s of matchedSchedulesData) {
-			const foundFriend = friends.find((friend) => s.userId === friend.id);
-			if (foundFriend !== undefined) {
-				result.push({ ...s, friendName: foundFriend.name, friendAvatarUrl: foundFriend.avatarUrl });
-			}
-		}
-		return result;
-	}, [matchedSchedulesData, friends]);
+	/* ========================================================================= */
+	// api calls
+	/* ========================================================================= */
 
 	//#region api calls
 
-	async function fetchUserSchedules() {
-		const response = await authFetch(`/api/schedules`);
-		if (!response.ok) {
-			const data = await response.json();
-			throw new Error(data.error);
-		}
+	async function fetchScheduleInstances(rangeStart = startOfWeek(new Date()), rangeEnd = endOfWeek(new Date())): Promise<ScheduleInstance[]> {
+		//params
+		const params = new URLSearchParams({
+			start: rangeStart.toISOString(),
+			end: rangeEnd.toISOString(),
+		});
 
+		//call
+		const response = await authFetch(`/api/instance?${params}`);
 		const data = await response.json();
-		const scheduleData = getScheduleFromParsedJson(data);
-		if (scheduleData == null) throw new Error("Schedule data invalid");
+		if (!response.ok) throw new Error(data.error);
 
-		setUserSchedules(scheduleData);
-		return scheduleData;
+		//validate
+		const instanceData = getScheduleInstancesFromParsedJson(data);
+		if (instanceData == null) throw new Error("Schedule instance data invalid");
+
+		//set state
+		setScheduleInstances(instanceData);
+
+		return instanceData;
 	}
 
-	async function fetchMatchedSchedules() {
-		const response = await authFetch(`/api/friends/overlap`);
+	async function deleteUserSchedule(id: string): Promise<ScheduleInstance[]> {
+		const response = await authFetch("/api/schedules", {
+			method: "DELETE",
+			body: JSON.stringify({ id }),
+		});
+
 		if (!response.ok) {
 			const data = await response.json();
 			throw new Error(data.error);
 		}
 
-		//try parse
-		const data = await response.json();
-		const scheduleData = getMatchedSchedulesFromParsedJson(data);
-		if (scheduleData == null) throw new Error("Matched schedule data invalid");
-
-		//set the raw useEffect
-		setMatchedSchedulesData(scheduleData);
-		return scheduleData;
-	}
-
-	async function deleteUserSchedule(id: string) {
-		const response = await authFetch(`/api/schedules`, { method: "DELETE", body: JSON.stringify({ id: id }) });
-		if (!response.ok) {
-			const data = await response.json();
-			throw new Error(data.error);
-		}
-
-		return fetchUserSchedules();
+		return fetchScheduleInstances();
 	}
 
 	async function addUserSchedule(
@@ -120,14 +104,19 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 		endTime: string,
 		repeatType: ScheduleRepeatType,
 		timezone: string,
-	): Promise<Schedule[]> {
+	): Promise<ScheduleInstance[]> {
 		const scheduleStart = new Date(`${date}T${startTime}`);
 		const scheduleEnd = new Date(`${date}T${endTime}`);
 
-		const response = await authFetch(`/api/schedules`, {
+		const response = await authFetch("/api/schedules", {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ userId, startTime: scheduleStart.toISOString(), endTime: scheduleEnd.toISOString(), repeatType, timezone }),
+			body: JSON.stringify({
+				userId,
+				startTime: scheduleStart.toISOString(),
+				endTime: scheduleEnd.toISOString(),
+				repeatType,
+				timezone,
+			}),
 		});
 
 		if (!response.ok) {
@@ -135,17 +124,19 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 			throw new Error(data.error);
 		}
 
-		return fetchUserSchedules();
+		return fetchScheduleInstances();
 	}
-	//#endregion
 
-	function getUserScheduleById(id: string): Schedule | undefined {
-		return userSchedules.find((s) => s.id === id);
-	}
+	//#endregion
 
 	return (
 		<ScheduleContext.Provider
-			value={{ userSchedules, getUserScheduleById, matchedSchedules, fetchUserSchedules, fetchMatchedSchedules, deleteUserSchedule, addUserSchedule }}
+			value={{
+				scheduleInstances,
+				fetchScheduleInstances,
+				deleteUserSchedule,
+				addUserSchedule,
+			}}
 		>
 			{children}
 		</ScheduleContext.Provider>
@@ -159,11 +150,12 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 /* ========================================================================= */
 
 //#region hook
+
 export function useSchedule(): ScheduleContextType {
 	const context = useContext(ScheduleContext);
-	if (!context) {
-		throw new Error("useSchedule must be used within a ScheduleProvider");
-	}
+	if (!context) throw new Error("useSchedule must be used within a ScheduleProvider");
+
 	return context;
 }
+
 //#endregion

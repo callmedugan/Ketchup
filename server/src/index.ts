@@ -9,6 +9,7 @@ import {
 	handlerBlockUser,
 	handlerGetFriends,
 	handlerGetFriendsOverlap,
+	handlerGetScheduleInstances,
 	handlerRemoveFriend,
 	handlerRequestFriend,
 	handlerRespondToFriendRequest,
@@ -59,7 +60,8 @@ app.put("/api/friends/:id/block", middlewareAuthentication, handlerBlockUser);
 app.delete("/api/friends/:id/block", middlewareAuthentication, handlerUnblockUser);
 app.get("/api/friends/", middlewareAuthentication, handlerGetFriends);
 app.delete("/api/friends/", middlewareAuthentication, handlerRemoveFriend);
-app.get("/api/friends/overlap", middlewareAuthentication, handlerGetFriendsOverlap); //uses start and end date query params
+app.get("/api/friends/overlap", middlewareAuthentication, handlerGetFriendsOverlap);
+app.get("/api/instance", middlewareAuthentication, handlerGetScheduleInstances); //uses start and end date query params
 
 //schedules
 app.post("/api/schedules", middlewareAuthentication, handlerCreateSchedule);

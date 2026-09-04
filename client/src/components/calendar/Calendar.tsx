@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import { addDays, addWeeks, format, isAfter, isBefore, isSameMonth, set, startOfDay, startOfWeek } from "date-fns";
-import { type Schedule } from "../../utils/types";
+import { useEffect, useMemo, useState } from "react";
+import { addDays, addWeeks, format, isSameMonth, startOfWeek } from "date-fns";
+import type { ScheduleInstance } from "../../utils/types";
 import StickyNote from "./StickyNote";
 import { useSchedule } from "../../contexts/SchedulesContext";
 import { LoadingIndicator } from "../LoadingIndicator";
@@ -11,13 +11,29 @@ export default function Calendar() {
 	const [error, setError] = useState<string | null>(null);
 	const [weekOffset, setWeekOffset] = useState(0);
 
-	const { fetchUserSchedules, userSchedules } = useSchedule();
+	const { fetchScheduleInstances, scheduleInstances } = useSchedule();
 
-	const weekStart = startOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 0 });
+	const weekStart = useMemo(
+		() =>
+			startOfWeek(addWeeks(new Date(), weekOffset), {
+				weekStartsOn: 0,
+			}),
+		[weekOffset],
+	);
 
-	const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+	const weekEnd = useMemo(() => addWeeks(weekStart, 1), [weekStart]);
 
-	const weekSchedule = useMemo(buildWeekSchedule, [weekOffset, userSchedules]);
+	const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+
+	const weekSchedule = useMemo(() => [...scheduleInstances].sort((a, b) => a.start.getTime() - b.start.getTime()), [scheduleInstances]);
+
+	/* ========================================================================= */
+	// fetch week
+	/* ========================================================================= */
+
+	useEffect(() => {
+		loadWeek();
+	}, [weekStart, weekEnd]);
 
 	if (error) return showError();
 	if (loading) return showLoading();
@@ -108,12 +124,7 @@ export default function Calendar() {
 	function showDay(day: Date, index: number) {
 		const isToday = format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
-		const daySchedules = weekSchedule.filter(
-			(schedule) =>
-				schedule.startTime.getFullYear() === day.getFullYear() &&
-				schedule.startTime.getMonth() === day.getMonth() &&
-				schedule.startTime.getDate() === day.getDate(),
-		);
+		const daySchedules = getSchedulesForDay(day);
 
 		return (
 			<div
@@ -121,7 +132,7 @@ export default function Calendar() {
 				className={`min-h-0 min-w-0 border-r border-stone-200/80 last:border-r-0 ${index % 2 === 0 ? "bg-brand-card" : "bg-brand-surface"}`}
 			>
 				{showDayHeader(day, isToday)}
-				{showDaySchedules(day, daySchedules)}
+				{showDaySchedules(daySchedules)}
 			</div>
 		);
 	}
@@ -142,87 +153,41 @@ export default function Calendar() {
 		);
 	}
 
-	function showDaySchedules(day: Date, schedules: Schedule[]) {
+	function showDaySchedules(schedules: ScheduleInstance[]) {
 		return (
 			<div className="flex gap-3 overflow-x-auto p-3 md:flex-col md:overflow-visible">
 				{schedules.map((schedule) => (
-					<StickyNote
-						key={`${schedule.id}-${day.toISOString()}`}
-						start={schedule.startTime}
-						end={schedule.endTime}
-						id={schedule.id}
-						noteDate={day}
-						onDeleted={handleScheduleDeleted}
-					/>
+					<StickyNote key={schedule.id} instance={schedule} onDeleted={handleScheduleDeleted} />
 				))}
 			</div>
 		);
 	}
 
-	/* ========================================================================= */
-	// Schedule building
-	/* ========================================================================= */
-
-	function buildWeekSchedule() {
-		const weekStart = startOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 0 });
-
-		const weekEnd = addWeeks(weekStart, 1);
-		const result: Schedule[] = [];
-
-		for (const schedule of userSchedules) {
-			if (schedule.repeatType === "once") {
-				addOnceSchedule(schedule, weekStart, weekEnd, result);
-			} else if (schedule.repeatType === "daily") {
-				addDailySchedule(schedule, weekStart, result);
-			} else if (schedule.repeatType === "weekly") {
-				addWeeklySchedule(schedule, weekStart, result);
-			}
-		}
-
-		return result.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
-	}
-
-	function addOnceSchedule(schedule: Schedule, weekStart: Date, weekEnd: Date, result: Schedule[]) {
-		if (isAfter(schedule.startTime, weekStart) && isBefore(schedule.endTime, weekEnd)) {
-			result.push(schedule);
-		}
-	}
-
-	function addDailySchedule(schedule: Schedule, weekStart: Date, result: Schedule[]) {
-		for (let i = 0; i < 7; i++) {
-			const day = addDays(weekStart, i);
-
-			if (startOfDay(day) < startOfDay(schedule.startTime)) {
-				continue;
-			}
-
-			result.push(copyScheduleToDay(schedule, day));
-		}
-	}
-
-	function addWeeklySchedule(schedule: Schedule, weekStart: Date, result: Schedule[]) {
-		const day = addDays(weekStart, schedule.startTime.getDay());
-
-		if (startOfDay(day) < startOfDay(schedule.startTime)) {
-			return;
-		}
-
-		result.push(copyScheduleToDay(schedule, day));
-	}
-
-	function copyScheduleToDay(schedule: Schedule, day: Date): Schedule {
-		return {
-			...schedule,
-
-			startTime: set(day, { hours: schedule.startTime.getHours(), minutes: schedule.startTime.getMinutes() }),
-
-			endTime: set(day, { hours: schedule.endTime.getHours(), minutes: schedule.endTime.getMinutes() }),
-		};
+	function getSchedulesForDay(day: Date): ScheduleInstance[] {
+		return weekSchedule.filter(
+			(schedule) =>
+				schedule.start.getFullYear() === day.getFullYear() &&
+				schedule.start.getMonth() === day.getMonth() &&
+				schedule.start.getDate() === day.getDate(),
+		);
 	}
 
 	/* ========================================================================= */
-	// States
+	// States / fetching
 	/* ========================================================================= */
+
+	async function loadWeek() {
+		setLoading(true);
+		setError(null);
+
+		try {
+			await fetchScheduleInstances(weekStart, weekEnd);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Failed to load schedule");
+		} finally {
+			setLoading(false);
+		}
+	}
 
 	function showError() {
 		return (
@@ -248,16 +213,8 @@ export default function Calendar() {
 		);
 	}
 
-	function handleScheduleDeleted() {
-		setLoading(true);
-
-		fetchUserSchedules()
-			.catch((err) => {
-				setError(err.message);
-			})
-			.finally(() => {
-				setLoading(false);
-			});
+	async function handleScheduleDeleted() {
+		await loadWeek();
 	}
 
 	/* ========================================================================= */
@@ -265,12 +222,12 @@ export default function Calendar() {
 	/* ========================================================================= */
 
 	function showMobileHeader() {
-		const weekStart = weekDays[0];
-		const weekEnd = weekDays[weekDays.length - 1];
+		const mobileWeekStart = weekDays[0];
+		const mobileWeekEnd = weekDays[weekDays.length - 1];
 
-		const dateRange = isSameMonth(weekStart, weekEnd)
-			? `${format(weekStart, "MMM d")} - ${format(weekEnd, "d, yyyy")}`
-			: `${format(weekStart, "MMM d")} - ${format(weekEnd, "MMM d, yyyy")}`;
+		const dateRange = isSameMonth(mobileWeekStart, mobileWeekEnd)
+			? `${format(mobileWeekStart, "MMM d")} - ${format(mobileWeekEnd, "d, yyyy")}`
+			: `${format(mobileWeekStart, "MMM d")} - ${format(mobileWeekEnd, "MMM d, yyyy")}`;
 
 		return (
 			<div className="flex shrink-0 items-center justify-between border-b border-brand-red-dark bg-brand-red px-3 py-3">
@@ -311,21 +268,16 @@ export default function Calendar() {
 	function showMobileDay(day: Date) {
 		const isToday = format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
-		const daySchedules = weekSchedule.filter(
-			(schedule) =>
-				schedule.startTime.getFullYear() === day.getFullYear() &&
-				schedule.startTime.getMonth() === day.getMonth() &&
-				schedule.startTime.getDate() === day.getDate(),
-		);
-
+		const daySchedules = getSchedulesForDay(day);
 		const hasSchedules = daySchedules.length > 0;
 
 		return (
 			<div
 				key={day.toISOString()}
-				className={`mx-3 my-2 shrink-0 overflow-hidden rounded-xl border border-stone-200 bg-brand-card shadow-sm ${hasSchedules ? "h-40" : "h-auto"}`}
+				className={`mx-3 my-2 shrink-0 overflow-hidden rounded-xl border border-stone-200 bg-brand-card shadow-sm ${
+					hasSchedules ? "h-40" : "h-auto"
+				}`}
 			>
-				{/* Day header */}
 				<div className={`flex items-center justify-between bg-[#f3e4d7] px-4 py-2 ${hasSchedules ? "border-b border-stone-200" : ""}`}>
 					<div className="flex items-baseline gap-2">
 						<span className="text-sm font-bold text-brand-text">{format(day, "EEE")}</span>
@@ -336,19 +288,11 @@ export default function Calendar() {
 					{isToday && <span className="rounded-full bg-brand-red px-2 py-1 text-[10px] font-bold text-white">Today</span>}
 				</div>
 
-				{/* Only render schedule area when schedules exist */}
 				{hasSchedules && (
 					<ScrollableContainer direction="horizontal">
 						<div className="flex h-full gap-2.5 p-3">
 							{daySchedules.map((schedule) => (
-								<StickyNote
-									key={`${schedule.id}-${day.toISOString()}`}
-									start={schedule.startTime}
-									end={schedule.endTime}
-									id={schedule.id}
-									noteDate={day}
-									onDeleted={handleScheduleDeleted}
-								/>
+								<StickyNote key={schedule.id} instance={schedule} onDeleted={handleScheduleDeleted} />
 							))}
 						</div>
 					</ScrollableContainer>

@@ -2,10 +2,10 @@ import { Request, Response } from "express";
 import { UnauthorizedError, BadRequestError, NotFoundError } from "../error.js";
 import z from "zod";
 import { addScheduleToDb, deleteScheduleFromDb, getScheduleByUserFromDb } from "../db/queries.js";
-import { formatInTimeZone, toZonedTime } from "date-fns-tz";
+import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 import { logInfo } from "./logging.js";
 import { ScheduleRepeatType, scheduleRepeatTypeRank } from "../db/schema.js";
-import { getDay, getHours, getMinutes, set } from "date-fns";
+import { getDay, getHours, getMinutes, isBefore, isSameDay, set, startOfDay } from "date-fns";
 
 //used to validate timezones
 export const timezoneSchema = z
@@ -34,7 +34,6 @@ const createScheduleSchema = z
 	.refine((data) => data.endTime > data.startTime, { message: "End time must be after start time", path: ["endTime"] });
 
 const deleteScheduleSchema = z.object({ id: z.uuid().min(1, "Id missing or blank") });
-const compareSchedulesSchema = z.object({ userId2: z.uuid().min(1, "userId2 cannot be blank") });
 
 export async function handlerCreateSchedule(req: Request, res: Response) {
 	// validate user
@@ -47,22 +46,23 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 
 	const { startTime, endTime, repeatType, timezone } = body.data;
 
+	//convert to utc to compare to db
+	const start = fromZonedTime(startTime, timezone);
+	const end = fromZonedTime(endTime, timezone);
+
 	// check for overlapping schedules
 	const userSchedules = await getScheduleByUserFromDb(userId);
 
 	//check to see if overlap occurs with any of the user's schedules
 	for (const schedule of userSchedules) {
-		const overlap = getTimeOverlapRepeating(
-			{ start: schedule.startTime, end: schedule.endTime, repeatType: schedule.repeatType, timezone: schedule.timezone },
-			{ start: startTime, end: endTime, repeatType, timezone },
-		);
+		const overlap = getTimeOverlapRepeating({ start: schedule.startTime, end: schedule.endTime, repeatType: schedule.repeatType }, { start, end, repeatType });
 
 		//give user a message for when the new schedule overlaps
 		if (overlap !== undefined) {
 			throw new BadRequestError(
-				`This availability overlaps your existing schedule on ${formatInTimeZone(schedule.startTime, schedule.timezone, "Pp")} to ${formatInTimeZone(
+				`This availability overlaps your existing schedule on ${formatInTimeZone(schedule.startTime, timezone, "Pp")} to ${formatInTimeZone(
 					schedule.endTime,
-					schedule.timezone,
+					timezone,
 					"h:mm a",
 				)}.`,
 			);
@@ -70,7 +70,7 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	}
 
 	// call db
-	const result = await addScheduleToDb({ userId, repeatType, startTime, endTime, timezone });
+	const result = await addScheduleToDb({ userId, repeatType, startTime, endTime });
 	if (result === undefined) throw new Error("Something went wrong adding the schedule to the db");
 
 	logInfo("schedule.created", { userId, scheduleId: result.id, repeatType: result.repeatType });
@@ -117,52 +117,87 @@ export async function handlerGetSchedules(req: Request, res: Response) {
 
 //#region schedule helpers
 
-type TimeRangeRepeating = { start: Date; end: Date; repeatType: ScheduleRepeatType; timezone: string };
+type TimeRangeRepeating = { start: Date; end: Date; repeatType: ScheduleRepeatType };
 
-function _dateToMinutes(date: Date, timezone: string) {
+//a should be the user input and converted to UTC
+export function getTimeOverlapRepeating(a: TimeRangeRepeating, b: TimeRangeRepeating): TimeRangeRepeating | undefined {
+	// get the day of the week for both schedules
+	const aDay = getDay(a.start);
+	const bDay = getDay(b.start);
+
+	// once/weekly schedules must land on the same weekday.
+	// both onces must be same day
+	if (a.repeatType !== "daily" && b.repeatType !== "daily" && aDay !== bDay) return undefined;
+	if (a.repeatType === "once" && b.repeatType === "once" && !isSameDay(a.start, b.start)) return undefined;
+
+	//use zone for a
+	const overlapStart = Math.max(a.start.getTime(), b.start.getTime());
+	const overlapEnd = Math.min(a.end.getTime(), b.end.getTime());
+
+	//no overlap
+	if (overlapStart >= overlapEnd) return undefined;
+
+	// get the lowest tier of repeat
+	const repeatType = scheduleRepeatTypeRank[a.repeatType] <= scheduleRepeatTypeRank[b.repeatType] ? a.repeatType : b.repeatType;
+
+	//get the start date of whichever is later
+	const overlapDate = isBefore(a.start, b.start) ? b.start : a.start;
+	const start = combineDateAndTime(overlapDate, new Date(overlapStart));
+	const end = combineDateAndTime(overlapDate, new Date(overlapEnd));
+
+	//return using the later schedule as the start date
+	return { start, end, repeatType };
+}
+
+//a should be the user input and b is the existing schedules
+// export function getTimeOverlapRepeating(a: TimeRangeRepeating, b: TimeRangeRepeating): TimeRangeRepeating | undefined {
+// 	// get the day of the week for both schedules
+// 	const aDay = getDay(toZonedTime(a.start, a.timezone));
+// 	const bDay = getDay(toZonedTime(b.start, b.timezone));
+
+// 	// once/weekly schedules must land on the same weekday.
+// 	// both onces must be same day
+// 	if (a.repeatType !== "daily" && b.repeatType !== "daily" && aDay !== bDay) return undefined;
+// 	if (a.repeatType === "once" && b.repeatType === "once" && !isSameDay(aDay, bDay)) return undefined;
+
+// 	//convert to minutes
+// 	const aStart = dateToMinutes(a.start, a.timezone);
+// 	const aEnd = dateToMinutes(a.end, a.timezone);
+// 	const bStart = dateToMinutes(b.start, b.timezone);
+// 	const bEnd = dateToMinutes(b.end, b.timezone);
+
+// 	//find the actual time overlap
+// 	const maxStart = Math.max(aStart, bStart);
+// 	const minEnd = Math.min(aEnd, bEnd);
+
+// 	//no overlap
+// 	if (maxStart >= minEnd) return undefined;
+
+// 	// get the lowest tier of repeat
+// 	const repeat = scheduleRepeatTypeRank[a.repeatType] <= scheduleRepeatTypeRank[b.repeatType] ? a.repeatType : b.repeatType;
+
+// 	//get the start date of whichever is later
+// 	const startDate = getLaterDate(a, b);
+// 	console.log(startDate);
+
+// 	//return using the later schedule as the start date and with the a timezone
+// 	return { start: minutesToDate(maxStart, startDate, a.timezone), end: minutesToDate(minEnd, startDate, a.timezone), repeatType: repeat, timezone: a.timezone };
+// }
+
+//converts a date to minutes offset by a timezone
+function dateToMinutes(date: Date, timezone: string) {
 	const zonedDate = toZonedTime(date, timezone);
 	return getHours(zonedDate) * 60 + getMinutes(zonedDate);
 }
 
-function _getDay(date: Date, timezone: string) {
-	const zonedDate = toZonedTime(date, timezone);
-	return getDay(zonedDate);
-}
-
-function _minutesToDate(minutes: number, date: Date, timezone: string) {
+//reverses minutes back to a date/time
+function minutesToDate(minutes: number, date: Date, timezone: string) {
 	const zonedDate = toZonedTime(date, timezone);
 	return set(zonedDate, { hours: Math.floor(minutes / 60), minutes: minutes % 60, seconds: 0, milliseconds: 0 });
 }
 
-export function getTimeOverlapRepeating(a: TimeRangeRepeating, b: TimeRangeRepeating): TimeRangeRepeating | undefined {
-	// Use the first schedule's timezone for the entire comparison.
-	const timezone = a.timezone;
-
-	const aDay = _getDay(a.start, timezone);
-	const bDay = _getDay(b.start, timezone);
-
-	// once/weekly schedules must land on the same weekday.
-	// daily schedules are always eligible for an overlap.
-	if (a.repeatType !== "daily" && b.repeatType !== "daily" && aDay !== bDay) {
-		return undefined;
-	}
-
-	const aStart = _dateToMinutes(a.start, timezone);
-	const aEnd = _dateToMinutes(a.end, timezone);
-
-	const bStart = _dateToMinutes(b.start, timezone);
-	const bEnd = _dateToMinutes(b.end, timezone);
-
-	const maxStart = Math.max(aStart, bStart);
-	const minEnd = Math.min(aEnd, bEnd);
-
-	if (maxStart >= minEnd) {
-		return undefined;
-	}
-
-	const repeat = scheduleRepeatTypeRank[a.repeatType] <= scheduleRepeatTypeRank[b.repeatType] ? a.repeatType : b.repeatType;
-
-	return { start: _minutesToDate(maxStart, a.start, timezone), end: _minutesToDate(minEnd, a.start, timezone), repeatType: repeat, timezone };
+function combineDateAndTime(date: Date, time: Date): Date {
+	return set(date, { hours: time.getHours(), minutes: time.getMinutes(), seconds: time.getSeconds(), milliseconds: 0 });
 }
 
 //#endregion

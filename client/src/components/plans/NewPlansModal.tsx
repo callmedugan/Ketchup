@@ -1,14 +1,20 @@
 import { useState, type SubmitEvent } from "react";
 import { addMinutes, differenceInMinutes, format } from "date-fns";
-import type { MatchedSchedule } from "../../utils/types";
+import type { ScheduleInstance } from "../../utils/types";
 import { usePlans } from "../../contexts/PlansContext";
 import ModalContainer from "../common/ModalContainer";
 import ModalHeader from "../common/ModalHeader";
 import Avatar from "../common/Avatar";
 
-type NewPlanModalProps = { overlap: MatchedSchedule; friendName: string; onClose: () => void };
+type ScheduleOverlap = ScheduleInstance["overlaps"][number];
 
-export default function NewPlanModal({ overlap, friendName, onClose }: NewPlanModalProps) {
+type NewPlanModalProps = {
+	overlap: ScheduleOverlap;
+	userScheduleId: string;
+	onClose: () => void;
+};
+
+export default function NewPlanModal({ overlap, userScheduleId, onClose }: NewPlanModalProps) {
 	const [title, setTitle] = useState("");
 	const [location, setLocation] = useState("");
 	const [comments, setComments] = useState("");
@@ -19,12 +25,11 @@ export default function NewPlanModal({ overlap, friendName, onClose }: NewPlanMo
 
 	const { addPlan } = usePlans();
 
-	const overlapMinutes = differenceInMinutes(overlap.endTime, overlap.startTime);
+	const overlapMinutes = differenceInMinutes(overlap.end, overlap.start);
 
-	// Keep at least 15 minutes between selected time and availability end
 	const maxStartOffset = Math.max(0, overlapMinutes - 15);
 
-	const meetTime = addMinutes(overlap.startTime, startOffset);
+	const meetTime = addMinutes(overlap.start, startOffset);
 
 	async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -33,7 +38,8 @@ export default function NewPlanModal({ overlap, friendName, onClose }: NewPlanMo
 		setIsSubmitting(true);
 
 		try {
-			await addPlan(overlap.userId, title, comments, meetTime, location);
+			await addPlan(overlap.user.id, title, comments, meetTime, location, [userScheduleId, overlap.id]);
+
 			onClose();
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Something went wrong while creating the plan.");
@@ -47,7 +53,6 @@ export default function NewPlanModal({ overlap, friendName, onClose }: NewPlanMo
 			<ModalHeader title="New Plan" onClose={onClose} />
 
 			<form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-5">
-				{/* Plan details */}
 				<section>
 					<div className="rounded-xl border border-stone-200 bg-brand-surface p-3 sm:p-4">
 						<div className="space-y-4 sm:space-y-5">
@@ -59,13 +64,13 @@ export default function NewPlanModal({ overlap, friendName, onClose }: NewPlanMo
 									<p className="text-xs font-bold text-brand-text sm:text-sm">{format(meetTime, "EEE, MMM d ' @ ' h:mm a")}</p>
 								</div>
 
-								{/* Time slider */}
 								<div className="ml-12 mt-2 sm:ml-18">
 									{showSlider()}
 
 									<div className="mt-1.5 flex justify-between text-[10px] text-brand-muted sm:text-xs">
-										<span>{format(overlap.startTime, "h:mm a")}</span>
-										<span>{format(overlap.endTime, "h:mm a")}</span>
+										<span>{format(overlap.start, "h:mm a")}</span>
+
+										<span>{format(overlap.end, "h:mm a")}</span>
 									</div>
 								</div>
 							</div>
@@ -75,9 +80,9 @@ export default function NewPlanModal({ overlap, friendName, onClose }: NewPlanMo
 								<p className="plan-label">With</p>
 
 								<div className="flex min-w-0 items-center gap-2.5">
-									<Avatar name={friendName} rawUrl={overlap.friendAvatarUrl} />
+									<Avatar name={overlap.user.name} rawUrl={overlap.user.avatarUrl} />
 
-									<p className="truncate text-xs font-bold text-brand-text sm:text-sm">{friendName}</p>
+									<p className="truncate text-xs font-bold text-brand-text sm:text-sm">{overlap.user.name}</p>
 								</div>
 							</div>
 
@@ -131,10 +136,8 @@ export default function NewPlanModal({ overlap, friendName, onClose }: NewPlanMo
 					</div>
 				</section>
 
-				{/* Error */}
 				{error && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 sm:text-sm">{error}</p>}
 
-				{/* Actions */}
 				<div className="flex gap-2 sm:justify-end">
 					<button type="button" onClick={onClose} disabled={isSubmitting} className="btn-secondary flex-1 sm:flex-none sm:min-w-1/4">
 						Cancel

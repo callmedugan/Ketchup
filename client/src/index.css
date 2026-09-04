@@ -81,6 +81,10 @@
 	@apply active:scale-90 active:bg-white/15;
 }
 
+@utility modal-step-number {
+	@apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-red text-xs font-bold text-white sm:h-7 sm:w-7 sm:text-sm
+}
+
 /* friends */
 
 @utility friend-info-label {

@@ -9,13 +9,14 @@ import {
 	plans,
 	RefreshToken,
 	refreshTokens,
-	Schedule,
+	ScheduleInsert,
 	ScheduleRecord,
 	schedules,
 	UserInsert,
 	UserPublic,
 	UserPrivate,
 	users,
+	ScheduleWithTimeZone,
 } from "./schema.js";
 import { BadRequestError, NotFoundError } from "../error.js";
 
@@ -89,7 +90,7 @@ export async function updateUserProfileInDb(userId: string, updates: { bio: stri
 //                        schedules
 /* ========================================================================= */
 
-export async function addScheduleToDb(schedule: Schedule): Promise<ScheduleRecord | undefined> {
+export async function addScheduleToDb(schedule: ScheduleInsert): Promise<ScheduleRecord | undefined> {
 	const [result] = await db.insert(schedules).values(schedule).onConflictDoNothing().returning();
 	return result;
 }
@@ -103,8 +104,12 @@ export async function deleteScheduleFromDb(requestingUser: string, id: string): 
 	return result;
 }
 
-export async function getScheduleByUserFromDb(userId: string): Promise<ScheduleRecord[]> {
-	const result = await db.select().from(schedules).where(eq(schedules.userId, userId));
+export async function getScheduleByUserFromDb(userId: string): Promise<ScheduleWithTimeZone[]> {
+	const result = await db
+		.select({ ...getTableColumns(schedules), timezone: users.timezone })
+		.from(schedules)
+		.innerJoin(users, eq(users.id, schedules.userId))
+		.where(eq(schedules.userId, userId));
 	return result;
 }
 
@@ -180,7 +185,8 @@ export async function requestFriendInDb(requesterId: string, responderId: string
 	if (existingRelationships.some((relationship) => relationship.status === "blocked")) throw new NotFoundError("Could not find other user");
 
 	// already friends
-	if (existingRelationships.some((relationship) => relationship.status === "accepted")) throw new BadRequestError("User is already friends with other user");
+	if (existingRelationships.some((relationship) => relationship.status === "accepted"))
+		throw new BadRequestError("User is already friends with other user");
 
 	// prevent the original requester from sending again after being declined
 	const previouslyDeclined = existingRelationships.some(
@@ -287,13 +293,32 @@ export async function checkUsersAreFriendsFromDb(user1: string, user2: string): 
 }
 
 //added later
-export type FriendScheduleRecord = { schedules?: string[] } & ScheduleRecord;
+export type FriendScheduleRecord = ScheduleRecord & {
+	user: {
+		id: UserPublic["id"];
+		name: UserPublic["name"];
+		timezone: UserPublic["timezone"];
+		avatarUrl: UserPublic["avatarUrl"];
+		bio: UserPublic["bio"];
+	};
+};
+export type FriendScheduleWithTimezone = { schedules?: string[] } & ScheduleWithTimeZone;
 
-// gets schedules where a relationship exists between user and any oher user
+// gets schedules where a relationship exists between user and any oher user - used to build instances
 export async function getAllFriendSchedules(userId: string): Promise<FriendScheduleRecord[]> {
 	return db
-		.select({ ...getTableColumns(schedules) })
+		.select({
+			...getTableColumns(schedules),
+			user: {
+				id: users.id,
+				name: users.name,
+				timezone: users.timezone,
+				avatarUrl: users.avatarUrl,
+				bio: users.bio,
+			},
+		})
 		.from(schedules)
+		.innerJoin(users, eq(users.id, schedules.userId))
 		.where(
 			exists(
 				db
@@ -310,6 +335,25 @@ export async function getAllFriendSchedules(userId: string): Promise<FriendSched
 					),
 			),
 		);
+}
+
+//used to build instances
+export async function getUserSchedulesFromDb(userId: string): Promise<FriendScheduleRecord[]> {
+	const result = await db
+		.select({
+			...getTableColumns(schedules),
+			user: {
+				id: users.id,
+				name: users.name,
+				timezone: users.timezone,
+				avatarUrl: users.avatarUrl,
+				bio: users.bio,
+			},
+		})
+		.from(schedules)
+		.innerJoin(users, eq(users.id, schedules.userId))
+		.where(eq(schedules.userId, userId));
+	return result;
 }
 
 /* ========================================================================= */

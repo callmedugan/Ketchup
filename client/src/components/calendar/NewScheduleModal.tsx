@@ -13,12 +13,11 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 	const [startTime, setStartTime] = useState("18:00");
 	const [endTime, setEndTime] = useState("21:00");
 	const [repeatType, setRepeatType] = useState<ScheduleRepeatType>("once");
-	const [allDay, setAllDay] = useState(false);
 
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const { addUserSchedule, fetchMatchedSchedules } = useSchedule();
+	const { addUserSchedule, fetchScheduleInstances } = useSchedule();
 	const { user } = useAuth();
 
 	/* ========================================================================= */
@@ -32,13 +31,10 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 
 		setError(null);
 
-		const submitStartTime = allDay ? "00:00" : startTime;
-		const submitEndTime = allDay ? "23:59" : endTime;
+		const scheduleStart = new Date(`${date}T${startTime}`);
+		const scheduleEnd = new Date(`${date}T${endTime}`);
 
-		const scheduleStart = new Date(`${date}T${submitStartTime}`);
-		const scheduleEnd = new Date(`${date}T${submitEndTime}`);
-
-		if (!allDay && scheduleEnd <= scheduleStart) {
+		if (scheduleEnd <= scheduleStart) {
 			setError("End time must be after start time.");
 			return;
 		}
@@ -46,9 +42,9 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 		setIsSubmitting(true);
 		setError(null);
 
-		addUserSchedule(user.id, date, submitStartTime, submitEndTime, repeatType, user.timezone)
+		addUserSchedule(user.id, date, startTime, endTime, repeatType, user.timezone)
 			.then(() => {
-				fetchMatchedSchedules();
+				fetchScheduleInstances();
 				onClose();
 			})
 			.catch((err) => {
@@ -60,7 +56,6 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 	}
 
 	function setPreset(start: string, end: string) {
-		setAllDay(false);
 		setStartTime(start);
 		setEndTime(end);
 	}
@@ -72,15 +67,7 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 			<form onSubmit={handleSubmit} className="space-y-2.5 overflow-y-auto p-4 sm:space-y-3 sm:p-5">
 				{/* Step 1 */}
 				<section>
-					<div className="mb-2 flex items-center gap-2 sm:mb-3 sm:gap-3">
-						<div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-red text-xs font-bold text-white sm:h-7 sm:w-7 sm:text-sm">
-							1
-						</div>
-
-						<div>
-							<p className="text-xs font-bold text-stone-800 sm:text-sm">Choose a date</p>
-						</div>
-					</div>
+					<StepTitle text="Choose a date" num="1" />
 
 					<input
 						id="availability-date"
@@ -95,39 +82,14 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 
 				{/* Step 2 */}
 				<section>
-					<div className="mb-2 flex items-center gap-2 sm:mb-3 sm:gap-3">
-						<div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-red text-xs font-bold text-white sm:h-7 sm:w-7 sm:text-sm">
-							2
-						</div>
-
-						<div>
-							<p className="text-xs font-bold text-stone-800 sm:text-sm">Choose a time</p>
-						</div>
-					</div>
-
-					{/* All day */}
-					<div className="mb-2 flex items-center justify-between rounded-xl border border-stone-200 bg-white px-3 py-2 sm:px-4">
-						<div>
-							<p className="text-xs font-bold text-stone-800 sm:text-sm">All day</p>
-						</div>
-
-						<button
-							type="button"
-							onClick={() => setAllDay((prev) => !prev)}
-							aria-pressed={allDay}
-							className={`relative h-6 w-11 shrink-0 rounded-full transition ${allDay ? "bg-brand-red" : "bg-stone-300"}`}
-						>
-							<span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${allDay ? "left-6" : "left-1"}`} />
-						</button>
-					</div>
+					<StepTitle text="Choose a time" num="2" />
 
 					{/* Quick select */}
-					<div className={allDay ? "pointer-events-none opacity-40" : ""}>
-						<div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-							<PresetButton label="Morning" onClick={() => setPreset("09:00", "12:00")} />
-							<PresetButton label="Afternoon" onClick={() => setPreset("12:00", "17:00")} />
-							<PresetButton label="Evening" onClick={() => setPreset("17:00", "22:00")} />
-						</div>
+					<div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+						<PresetButton label="Morning" onClick={() => setPreset("09:00", "12:00")} />
+						<PresetButton label="Afternoon" onClick={() => setPreset("12:00", "17:00")} />
+						<PresetButton label="Evening" onClick={() => setPreset("17:00", "22:00")} />
+						<PresetButton label="All Day" onClick={() => setPreset("00:00", "23:59")} />
 					</div>
 
 					{/* Custom time */}
@@ -142,8 +104,7 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 									id="availability-start"
 									type="time"
 									step={900}
-									required={!allDay}
-									disabled={allDay}
+									required={true}
 									value={startTime}
 									onChange={(event) => setStartTime(event.target.value)}
 									className="w-full rounded-xl border border-stone-300 bg-white px-2.5 py-2 text-xs text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400 sm:px-3 sm:py-2.5 sm:text-sm"
@@ -159,8 +120,7 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 									id="availability-end"
 									type="time"
 									step={900}
-									required={!allDay}
-									disabled={allDay}
+									required={true}
 									value={endTime}
 									onChange={(event) => setEndTime(event.target.value)}
 									className="w-full rounded-xl border border-stone-300 bg-white px-2.5 py-2 text-xs text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400 sm:px-3 sm:py-2.5 sm:text-sm"
@@ -172,15 +132,7 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 
 				{/* Step 3 */}
 				<section>
-					<div className="mb-2 flex items-center gap-2 sm:mb-3 sm:gap-3">
-						<div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-red text-xs font-bold text-white sm:h-7 sm:w-7 sm:text-sm">
-							3
-						</div>
-
-						<div>
-							<p className="text-xs font-bold text-stone-800 sm:text-sm">Select frequency</p>
-						</div>
-					</div>
+					<StepTitle text="Select frequency" num="3" />
 
 					<select
 						id="availability-repeat"
@@ -223,5 +175,18 @@ function PresetButton({ label, onClick }: PresetButtonProps) {
 		>
 			{label}
 		</button>
+	);
+}
+
+type StepTitleProps = { text: string; num: string };
+
+function StepTitle({ text, num }: StepTitleProps) {
+	return (
+		<div className="mb-2 flex items-center gap-2 sm:mb-3 sm:gap-3">
+			<div className="modal-step-number">{num}</div>
+			<div>
+				<p className="text-xs font-bold text-stone-800 sm:text-sm">{text}</p>
+			</div>
+		</div>
 	);
 }

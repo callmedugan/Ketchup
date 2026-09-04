@@ -103,6 +103,45 @@ export function getFriendsFromParsedJson(data: unknown): Friend[] | undefined {
 //#endregion
 
 /* ========================================================================= */
+//                        instances
+/* ========================================================================= */
+
+export const instanceUserDataSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	timezone: z.string(),
+	avatarUrl: z.string(),
+	bio: z.string(),
+});
+
+export const scheduleInstanceSchema = z.object({
+	id: z.string(),
+	scheduleId: z.string(),
+	start: z.coerce.date(),
+	end: z.coerce.date(),
+
+	user: instanceUserDataSchema,
+
+	overlaps: z.array(
+		z.object({
+			id: z.string(),
+			start: z.coerce.date(),
+			end: z.coerce.date(),
+			user: instanceUserDataSchema,
+		}),
+	),
+});
+
+export type ScheduleInstance = z.infer<typeof scheduleInstanceSchema>;
+
+//always returns array
+export function getScheduleInstancesFromParsedJson(data: unknown): ScheduleInstance[] | undefined {
+	const result = z.array(scheduleInstanceSchema).safeParse(data);
+	if (!result.success) return undefined;
+	return result.data;
+}
+
+/* ========================================================================= */
 //                        matched schedules
 /* ========================================================================= */
 

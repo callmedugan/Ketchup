@@ -33,7 +33,8 @@ export const users = pgTable("users", {
 // TODO: add color, matched status? (seperate table for a sepcific overlap),
 
 export type ScheduleRecord = typeof schedules.$inferSelect;
-export type Schedule = typeof schedules.$inferInsert;
+export type ScheduleWithTimeZone = typeof schedules.$inferSelect & { timezone: string };
+export type ScheduleInsert = typeof schedules.$inferInsert;
 
 export const scheduleRepeatEnum = pgEnum("repeat_type", ["once", "daily", "weekly"]);
 export const schedules = pgTable("schedules", {
@@ -49,7 +50,6 @@ export const schedules = pgTable("schedules", {
 	userId: uuid("user_id")
 		.notNull()
 		.references(() => users.id, { onDelete: "cascade" }),
-	timezone: varchar("timezone", { length: 64 }).notNull(),
 });
 
 export type ScheduleRepeatType = "once" | "daily" | "weekly";

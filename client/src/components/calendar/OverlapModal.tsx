@@ -2,7 +2,7 @@ import { differenceInMinutes, format } from "date-fns";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type { MatchedSchedule } from "../../utils/types";
+import type { ScheduleInstance } from "../../utils/types";
 import { useSchedule } from "../../contexts/SchedulesContext";
 
 import Avatar from "../common/Avatar";
@@ -11,12 +11,14 @@ import ModalContainer from "../common/ModalContainer";
 import ModalHeader from "../common/ModalHeader";
 import HoldButton from "../common/HoldButton";
 
+type ScheduleOverlap = ScheduleInstance["overlaps"][number];
+
 type OverlapModalProps = {
 	id: string;
 	start: Date;
 	end: Date;
 	hasPassed: boolean;
-	noteOverlaps: MatchedSchedule[];
+	noteOverlaps: ScheduleInstance["overlaps"];
 	onClose: () => void;
 	onDeleted: () => void;
 };
@@ -28,7 +30,7 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 	const { deleteUserSchedule } = useSchedule();
 	const navigate = useNavigate();
 
-	const overlaps = [...noteOverlaps].sort((a, b) => differenceInMinutes(b.endTime, b.startTime) - differenceInMinutes(a.endTime, a.startTime));
+	const overlaps = [...noteOverlaps].sort((a, b) => differenceInMinutes(b.end, b.start) - differenceInMinutes(a.end, a.start));
 
 	async function handleDeleteSchedule() {
 		setLoading(true);
@@ -64,7 +66,7 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 			<ScrollableContainer className="min-h-0 flex-1 px-3 py-3 sm:px-5 sm:py-4">
 				<div className="space-y-2">
 					{overlaps.length > 0 ? (
-						overlaps.map((overlap) => showOverlap(overlap))
+						overlaps.map(showOverlap)
 					) : (
 						<div className="rounded-xl border border-stone-200 bg-white px-4 py-5 text-center">
 							<p className={`text-xs font-medium sm:text-sm ${hasPassed ? "text-brand-muted/60" : "text-brand-muted"}`}>
@@ -91,11 +93,11 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 		</ModalContainer>
 	);
 
-	function showOverlap(overlap: MatchedSchedule) {
+	function showOverlap(overlap: ScheduleOverlap) {
 		return (
 			<div key={overlap.id} className={`rounded-xl border border-stone-200 bg-white p-3 shadow-sm ${hasPassed ? "opacity-60" : ""}`}>
 				<div className="flex items-center gap-2.5 sm:gap-3">
-					<Avatar name={overlap.friendName} rawUrl={overlap.friendAvatarUrl} />
+					<Avatar name={overlap.user.name} rawUrl={overlap.user.avatarUrl} />
 
 					{showFriendInfo(overlap)}
 				</div>
@@ -104,12 +106,17 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 					type="button"
 					disabled={hasPassed}
 					onClick={() => {
-						//adjust the overlap to the specific day
-						const newPlanOverlap: MatchedSchedule = { ...overlap, startTime: start, endTime: end };
-						navigate("/plans", { state: { newPlanOverlap } });
+						navigate("/plans", {
+							state: {
+								newPlanOverlap: overlap,
+								userScheduleId: id,
+							},
+						});
 					}}
 					className={`mt-2.5 w-full rounded-lg px-3 py-2 text-xs font-bold transition active:scale-[0.98] sm:text-sm ${
-						hasPassed ? "cursor-not-allowed bg-stone-200 text-brand-muted/70" : "bg-brand-red text-white hover:bg-brand-red-dark active:bg-brand-red-dark"
+						hasPassed
+							? "cursor-not-allowed bg-stone-200 text-brand-muted/70"
+							: "bg-brand-red text-white hover:bg-brand-red-dark active:bg-brand-red-dark"
 					}`}
 				>
 					{hasPassed ? "Expired" : "Make plans!"}
@@ -118,8 +125,8 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 		);
 	}
 
-	function showFriendInfo(overlap: MatchedSchedule) {
-		const minutes = differenceInMinutes(overlap.endTime, overlap.startTime);
+	function showFriendInfo(overlap: ScheduleOverlap) {
+		const minutes = differenceInMinutes(overlap.end, overlap.start);
 
 		const hours = Math.floor(minutes / 60);
 		const remainingMinutes = minutes % 60;
@@ -144,9 +151,13 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 
 		return (
 			<div className="min-w-0 flex-1">
-				<div className="truncate text-sm font-semibold text-brand-text">{overlap.friendName}</div>
+				<div className="truncate text-sm font-semibold text-brand-text">{overlap.user.name}</div>
 
 				<p className={`mt-0.5 text-xs font-bold sm:text-sm ${durationStyle}`}>{duration}</p>
+
+				<p className="mt-0.5 text-[10px] font-medium text-brand-muted sm:text-xs">
+					{format(overlap.start, "p")} – {format(overlap.end, "p")}
+				</p>
 			</div>
 		);
 	}

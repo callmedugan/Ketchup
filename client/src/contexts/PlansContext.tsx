@@ -15,7 +15,7 @@ type PlansContextType = {
 	plansNotificationCount: number;
 	fetchPlans: () => Promise<PlanData[]>;
 	getPlanById: (id: string) => PlanData | undefined;
-	addPlan: (friendId: string, title: string, comments: string, meetTime: Date, location: string) => Promise<PlanData[]>;
+	addPlan: (friendId: string, title: string, comments: string, meetTime: Date, location: string, scheduleIds: string[]) => Promise<PlanData[]>;
 	cancelPlan: (id: string) => Promise<PlanData[]>;
 	updatePlanStatus: (id: string, response: "accepted" | "declined") => Promise<PlanData[]>;
 };
@@ -57,7 +57,8 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 		const result = [];
 		for (const p of plansData) {
 			//find using friend in either creator or friend field
-			const foundFriend = p.creatorId === user!.id ? friends.find((friend) => p.friendId === friend.id) : friends.find((friend) => p.creatorId === friend.id);
+			const foundFriend =
+				p.creatorId === user!.id ? friends.find((friend) => p.friendId === friend.id) : friends.find((friend) => p.creatorId === friend.id);
 			if (foundFriend !== undefined) {
 				result.push({ ...p, friendName: foundFriend.name, friendAvatarUrl: foundFriend.avatarUrl });
 			} //else console.error("failed to find friend data for: " + p.title);
@@ -88,11 +89,24 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 		return planData;
 	}
 
-	async function addPlan(friendId: string, title: string, comments: string, meetTime: Date, location: string): Promise<PlanData[]> {
-		const response = await authFetch(`/api/plans`, {
+	async function addPlan(
+		friendId: string,
+		title: string,
+		comments: string,
+		meetTime: Date,
+		location: string,
+		scheduleIds: string[],
+	): Promise<PlanData[]> {
+		const response = await authFetch("/api/plans", {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ friendId, title, comments, meetTime, location }),
+			body: JSON.stringify({
+				friendId,
+				title,
+				comments,
+				meetTime,
+				location,
+				scheduleIds,
+			}),
 		});
 
 		if (!response.ok) {
