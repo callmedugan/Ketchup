@@ -10,31 +10,27 @@ export const timezoneSchema = z
 	.refine(
 		(value) => {
 			try {
-				new Intl.DateTimeFormat("en-US", { timeZone: value });
+				new Intl.DateTimeFormat("en-US", {
+					timeZone: value,
+				});
 
 				return true;
 			} catch {
 				return false;
 			}
 		},
-		{ message: "Invalid timezone" },
+		{
+			message: "Invalid timezone",
+		},
 	);
 
 export type Timezone = z.infer<typeof timezoneSchema>;
 
 function parseOneOrMany<T>(schema: z.ZodType<T>, data: unknown): T[] | undefined {
 	const arrayResult = z.array(schema).safeParse(data);
-
-	if (arrayResult.success) {
-		return arrayResult.data;
-	}
-
+	if (arrayResult.success) return arrayResult.data;
 	const singleResult = schema.safeParse(data);
-
-	if (singleResult.success) {
-		return [singleResult.data];
-	}
-
+	if (singleResult.success) return [singleResult.data];
 	return undefined;
 }
 
@@ -47,14 +43,10 @@ function parseOneOrMany<T>(schema: z.ZodType<T>, data: unknown): T[] | undefined
 export const scheduleSchema = z.object({
 	id: z.uuid(),
 	userId: z.uuid(),
-
 	repeatType: z.enum(["once", "daily", "weekly"]),
-
 	startTime: z.coerce.date(),
 	endTime: z.coerce.date(),
-
 	timezone: timezoneSchema,
-
 	createdAt: z.coerce.date(),
 	updatedAt: z.coerce.date(),
 });
@@ -76,21 +68,14 @@ export function getScheduleFromParsedJson(data: unknown): Schedule[] | undefined
 
 export const friendSchema = z.object({
 	id: z.uuid(),
-
 	name: z.string(),
-
+	bio: z.string(),
+	timezone: timezoneSchema,
+	avatarUrl: z.string(),
+	status: z.enum(["requested", "accepted", "declined", "blocked"]),
+	requestDirection: z.enum(["sent", "received"]),
 	createdAt: z.coerce.date(),
 	updatedAt: z.coerce.date(),
-
-	status: z.enum(["requested", "accepted", "declined", "blocked"]),
-
-	bio: z.string(),
-
-	timezone: timezoneSchema,
-
-	avatarUrl: z.string(),
-
-	requestDirection: z.enum(["sent", "received"]),
 });
 
 export type Friend = z.infer<typeof friendSchema>;
@@ -103,67 +88,6 @@ export function getFriendsFromParsedJson(data: unknown): Friend[] | undefined {
 //#endregion
 
 /* ========================================================================= */
-//                        instances
-/* ========================================================================= */
-
-export const instanceUserDataSchema = z.object({
-	id: z.string(),
-	name: z.string(),
-	timezone: z.string(),
-	avatarUrl: z.string(),
-	bio: z.string(),
-});
-
-export const scheduleInstanceSchema = z.object({
-	id: z.string(),
-	scheduleId: z.string(),
-	start: z.coerce.date(),
-	end: z.coerce.date(),
-
-	user: instanceUserDataSchema,
-
-	overlaps: z.array(
-		z.object({
-			id: z.string(),
-			start: z.coerce.date(),
-			end: z.coerce.date(),
-			user: instanceUserDataSchema,
-		}),
-	),
-});
-
-export type ScheduleInstance = z.infer<typeof scheduleInstanceSchema>;
-
-//always returns array
-export function getScheduleInstancesFromParsedJson(data: unknown): ScheduleInstance[] | undefined {
-	const result = z.array(scheduleInstanceSchema).safeParse(data);
-	if (!result.success) return undefined;
-	return result.data;
-}
-
-/* ========================================================================= */
-//                        matched schedules
-/* ========================================================================= */
-
-//#region matched schedules
-
-// backend
-export const matchedScheduleDataSchema = scheduleSchema.extend({ schedules: z.array(z.uuid()) });
-
-export type MatchedScheduleData = z.infer<typeof matchedScheduleDataSchema>;
-
-export function getMatchedSchedulesFromParsedJson(data: unknown): MatchedScheduleData[] | undefined {
-	return parseOneOrMany(matchedScheduleDataSchema, data);
-}
-
-// frontend
-export const matchedScheduleSchema = matchedScheduleDataSchema.extend({ friendName: z.string(), friendAvatarUrl: z.string() });
-
-export type MatchedSchedule = z.infer<typeof matchedScheduleSchema>;
-
-//#endregion
-
-/* ========================================================================= */
 //                        user
 /* ========================================================================= */
 
@@ -171,14 +95,10 @@ export type MatchedSchedule = z.infer<typeof matchedScheduleSchema>;
 
 export const userSchema = z.object({
 	id: z.uuid(),
-
 	name: z.string(),
 	email: z.email(),
-
 	bio: z.string(),
-
 	timezone: timezoneSchema,
-
 	avatarUrl: z.string(),
 });
 
@@ -186,11 +106,7 @@ export type User = z.infer<typeof userSchema>;
 
 export function getUserFromParsedJson(data: unknown): User | undefined {
 	const result = userSchema.safeParse(data);
-
-	if (!result.success) {
-		return undefined;
-	}
-
+	if (!result.success) return undefined;
 	return result.data;
 }
 
@@ -200,17 +116,14 @@ export function getUserFromParsedJson(data: unknown): User | undefined {
 //                        user search result
 /* ========================================================================= */
 
-//#region userSearchResult
+//#region user search result
 
 export const userSearchResultSchema = z.object({
 	id: z.uuid(),
-
 	name: z.string(),
-
-	avatarUrl: z.string(),
 	bio: z.string(),
-
 	timezone: timezoneSchema,
+	avatarUrl: z.string(),
 });
 
 export type UserSearchResult = z.infer<typeof userSearchResultSchema>;
@@ -229,23 +142,16 @@ export function getUserSearchResultsFromParsedJson(data: unknown): UserSearchRes
 
 export const planDataSchema = z.object({
 	id: z.uuid(),
-
 	creatorId: z.uuid(),
 	friendId: z.uuid(),
-
 	status: z.enum(["declined", "pending", "confirmed", "cancelled"]),
-
 	title: z.string(),
 	comments: z.string(),
-
+	location: z.string(),
 	meetTime: z.coerce.date(),
-
+	lastUpdatedBy: z.uuid(),
 	createdAt: z.coerce.date(),
 	updatedAt: z.coerce.date(),
-
-	lastUpdatedBy: z.uuid(),
-
-	location: z.string(),
 });
 
 export type PlanData = z.infer<typeof planDataSchema>;
@@ -256,7 +162,10 @@ export function getPlansFromParsedJson(data: unknown): PlanData[] | undefined {
 }
 
 // frontend
-export const planSchema = planDataSchema.extend({ friendName: z.string(), friendAvatarUrl: z.string() });
+export const planSchema = planDataSchema.extend({
+	friendName: z.string(),
+	friendAvatarUrl: z.string(),
+});
 
 export type Plan = z.infer<typeof planSchema>;
 
@@ -283,10 +192,10 @@ export const presetAvatarStrings = [
 	"aioli",
 ] as const;
 
-export type presetAvatarType = (typeof presetAvatarStrings)[number];
+export type PresetAvatarType = (typeof presetAvatarStrings)[number];
 
-export function isPresetAvatar(value: string): value is presetAvatarType {
-	return presetAvatarStrings.includes(value as presetAvatarType);
+export function isPresetAvatar(value: string): value is PresetAvatarType {
+	return presetAvatarStrings.includes(value as PresetAvatarType);
 }
 
 //#endregion

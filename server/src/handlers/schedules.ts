@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { UnauthorizedError, BadRequestError, NotFoundError } from "../error.js";
 import z from "zod";
-import { addScheduleToDb, deleteScheduleFromDb, getScheduleByUserFromDb } from "../db/queries.js";
+import { addScheduleToDb, deleteScheduleFromDb, getScheduleByUserFromDb, getUserAndFriendsSchedulesFromDb } from "../db/queries.js";
 import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 import { logInfo } from "./logging.js";
 import { ScheduleRepeatType, scheduleRepeatTypeRank } from "../db/schema.js";
@@ -55,7 +55,10 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 
 	//check to see if overlap occurs with any of the user's schedules
 	for (const schedule of userSchedules) {
-		const overlap = getTimeOverlapRepeating({ start: schedule.startTime, end: schedule.endTime, repeatType: schedule.repeatType }, { start, end, repeatType });
+		const overlap = getTimeOverlapRepeating(
+			{ start: schedule.startTime, end: schedule.endTime, repeatType: schedule.repeatType },
+			{ start, end, repeatType },
+		);
 
 		//give user a message for when the new schedule overlaps
 		if (overlap !== undefined) {
@@ -99,13 +102,13 @@ export async function handlerDeleteSchedule(req: Request, res: Response) {
 	res.status(204).send();
 }
 
-export async function handlerGetSchedules(req: Request, res: Response) {
+export async function handlerGetUserAndFriendSchedules(req: Request, res: Response) {
 	// validate user
 	const userId = req.userId;
 	if (!userId) throw new UnauthorizedError("User not authenticated");
 
 	// call db
-	const result = await getScheduleByUserFromDb(userId);
+	const result = await getUserAndFriendsSchedulesFromDb(userId);
 
 	// return
 	res.status(200).json(result);

@@ -17,6 +17,8 @@ import {
 	UserPrivate,
 	users,
 	ScheduleWithTimeZone,
+	ScheduleWithUserInfo,
+	userPublicColumns,
 } from "./schema.js";
 import { BadRequestError, NotFoundError } from "../error.js";
 
@@ -111,6 +113,33 @@ export async function getScheduleByUserFromDb(userId: string): Promise<ScheduleW
 		.innerJoin(users, eq(users.id, schedules.userId))
 		.where(eq(schedules.userId, userId));
 	return result;
+}
+
+export async function getUserAndFriendsSchedulesFromDb(userId: string): Promise<{
+	userSchedules: ScheduleWithUserInfo[];
+	friendSchedules: ScheduleWithUserInfo[];
+}> {
+	const result = await db
+		.select({
+			...getTableColumns(schedules),
+			user: userPublicColumns,
+		})
+		.from(schedules)
+		.innerJoin(users, eq(users.id, schedules.userId))
+		.leftJoin(
+			friends,
+			or(
+				and(eq(friends.requesterId, userId), eq(friends.responderId, schedules.userId)),
+				and(eq(friends.responderId, userId), eq(friends.requesterId, schedules.userId)),
+			),
+		)
+		.where(or(eq(schedules.userId, userId), and(eq(friends.status, "accepted"), ne(schedules.userId, userId))));
+
+	//split the schedules by filtering twice - could be more performant but can revisit later
+	return {
+		userSchedules: result.filter((schedule) => schedule.userId === userId),
+		friendSchedules: result.filter((schedule) => schedule.userId !== userId),
+	};
 }
 
 /* ========================================================================= */

@@ -9,13 +9,12 @@ import {
 	handlerBlockUser,
 	handlerGetFriends,
 	handlerGetFriendsOverlap,
-	handlerGetScheduleInstances,
 	handlerRemoveFriend,
 	handlerRequestFriend,
 	handlerRespondToFriendRequest,
 	handlerUnblockUser,
 } from "./handlers/friends.js";
-import { handlerCreateSchedule, handlerDeleteSchedule, handlerGetSchedules } from "./handlers/schedules.js";
+import { handlerCreateSchedule, handlerDeleteSchedule, handlerGetUserAndFriendSchedules } from "./handlers/schedules.js";
 import { handlerCancelPlan, handlerCreatePlans, handlerGetPlans, handlerRespondToPlan } from "./handlers/plans.js";
 
 const app = express();
@@ -61,13 +60,12 @@ app.delete("/api/friends/:id/block", middlewareAuthentication, handlerUnblockUse
 app.get("/api/friends/", middlewareAuthentication, handlerGetFriends);
 app.delete("/api/friends/", middlewareAuthentication, handlerRemoveFriend);
 app.get("/api/friends/overlap", middlewareAuthentication, handlerGetFriendsOverlap);
-app.get("/api/instance", middlewareAuthentication, handlerGetScheduleInstances); //uses start and end date query params
 
 //schedules
 app.post("/api/schedules", middlewareAuthentication, handlerCreateSchedule);
 app.delete("/api/schedules", middlewareAuthentication, handlerDeleteSchedule);
 // validates user cred and that user is friends with user before showing the schedule (prob can remove since i wont need)
-app.get("/api/schedules", middlewareAuthentication, handlerGetSchedules);
+app.get("/api/schedules", middlewareAuthentication, handlerGetUserAndFriendSchedules);
 
 //plans
 app.get("/api/plans", middlewareAuthentication, handlerGetPlans);

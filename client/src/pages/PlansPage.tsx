@@ -1,11 +1,9 @@
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
-
-import type { ScheduleInstance } from "../utils/types";
-
 import NewPlanModal from "../components/plans/NewPlansModal";
 import PageContainer from "./PageContainer";
 import PlansSplitView from "../components/plans/PlansSplitView";
+import type { ScheduleInstance } from "../components/calendar/Instance";
 
 type ScheduleOverlap = ScheduleInstance["overlaps"][number];
 

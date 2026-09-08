@@ -1,17 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { addDays, addWeeks, format, isSameMonth, startOfWeek } from "date-fns";
-import type { ScheduleInstance } from "../../utils/types";
+
+import type { ScheduleInstance } from "./Instance";
+
 import StickyNote from "./StickyNote";
 import { useSchedule } from "../../contexts/SchedulesContext";
-import { LoadingIndicator } from "../LoadingIndicator";
 import ScrollableContainer from "../common/ScrollableContainer";
 
 export default function Calendar() {
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [weekOffset, setWeekOffset] = useState(0);
 
-	const { fetchScheduleInstances, scheduleInstances } = useSchedule();
+	const { buildScheduleInstances } = useSchedule();
+
+	/* ========================================================================= */
+	// week
+	/* ========================================================================= */
 
 	const weekStart = useMemo(
 		() =>
@@ -25,18 +28,36 @@ export default function Calendar() {
 
 	const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
-	const weekSchedule = useMemo(() => [...scheduleInstances].sort((a, b) => a.start.getTime() - b.start.getTime()), [scheduleInstances]);
-
 	/* ========================================================================= */
-	// fetch week
+	// instances
 	/* ========================================================================= */
 
-	useEffect(() => {
-		loadWeek();
-	}, [weekStart, weekEnd]);
+	const weekSchedule = useMemo(() => {
+		return buildScheduleInstances(weekStart, weekEnd).sort((a, b) => a.start.getTime() - b.start.getTime());
+	}, [buildScheduleInstances, weekStart, weekEnd]);
 
-	if (error) return showError();
-	if (loading) return showLoading();
+	/* ========================================================================= */
+	// group by day
+	/* ========================================================================= */
+
+	const schedulesByDay = useMemo(() => {
+		const map = new Map<string, ScheduleInstance[]>();
+
+		for (const schedule of weekSchedule) {
+			const key = format(schedule.start, "yyyy-MM-dd");
+
+			const daySchedules = map.get(key) ?? [];
+
+			daySchedules.push(schedule);
+			map.set(key, daySchedules);
+		}
+
+		return map;
+	}, [weekSchedule]);
+
+	/* ========================================================================= */
+	// page
+	/* ========================================================================= */
 
 	return (
 		<div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -157,64 +178,16 @@ export default function Calendar() {
 		return (
 			<div className="flex gap-3 overflow-x-auto p-3 md:flex-col md:overflow-visible">
 				{schedules.map((schedule) => (
-					<StickyNote key={schedule.id} instance={schedule} onDeleted={handleScheduleDeleted} />
+					<StickyNote key={schedule.id} instance={schedule} />
 				))}
 			</div>
 		);
 	}
 
 	function getSchedulesForDay(day: Date): ScheduleInstance[] {
-		return weekSchedule.filter(
-			(schedule) =>
-				schedule.start.getFullYear() === day.getFullYear() &&
-				schedule.start.getMonth() === day.getMonth() &&
-				schedule.start.getDate() === day.getDate(),
-		);
-	}
+		const key = format(day, "yyyy-MM-dd");
 
-	/* ========================================================================= */
-	// States / fetching
-	/* ========================================================================= */
-
-	async function loadWeek() {
-		setLoading(true);
-		setError(null);
-
-		try {
-			await fetchScheduleInstances(weekStart, weekEnd);
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to load schedule");
-		} finally {
-			setLoading(false);
-		}
-	}
-
-	function showError() {
-		return (
-			<div className="flex min-h-96 flex-1 items-center justify-center px-6">
-				<div className="text-center">
-					<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 font-bold text-red-600">!</div>
-
-					<h2 className="mt-4 text-lg font-bold text-brand-text">Something went wrong</h2>
-
-					<p role="alert" className="mt-2 text-sm font-medium text-red-600">
-						{error}
-					</p>
-				</div>
-			</div>
-		);
-	}
-
-	function showLoading() {
-		return (
-			<div className="flex min-h-96 flex-1 items-center justify-center">
-				<LoadingIndicator variant="Loading" />
-			</div>
-		);
-	}
-
-	async function handleScheduleDeleted() {
-		await loadWeek();
+		return schedulesByDay.get(key) ?? [];
 	}
 
 	/* ========================================================================= */
@@ -269,6 +242,7 @@ export default function Calendar() {
 		const isToday = format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
 		const daySchedules = getSchedulesForDay(day);
+
 		const hasSchedules = daySchedules.length > 0;
 
 		return (
@@ -292,7 +266,7 @@ export default function Calendar() {
 					<ScrollableContainer direction="horizontal">
 						<div className="flex h-full gap-2.5 p-3">
 							{daySchedules.map((schedule) => (
-								<StickyNote key={schedule.id} instance={schedule} onDeleted={handleScheduleDeleted} />
+								<StickyNote key={schedule.id} instance={schedule} />
 							))}
 						</div>
 					</ScrollableContainer>

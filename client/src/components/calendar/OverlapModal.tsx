@@ -2,7 +2,8 @@ import { differenceInMinutes, format } from "date-fns";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type { ScheduleInstance } from "../../utils/types";
+import type { ScheduleInstance } from "./Instance";
+
 import { useSchedule } from "../../contexts/SchedulesContext";
 
 import Avatar from "../common/Avatar";
@@ -20,10 +21,9 @@ type OverlapModalProps = {
 	hasPassed: boolean;
 	noteOverlaps: ScheduleInstance["overlaps"];
 	onClose: () => void;
-	onDeleted: () => void;
 };
 
-export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, onClose, onDeleted }: OverlapModalProps) {
+export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, onClose }: OverlapModalProps) {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -36,17 +36,14 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 		setLoading(true);
 		setError(null);
 
-		deleteUserSchedule(id)
-			.then(() => {
-				onClose();
-				onDeleted();
-			})
-			.catch((err) => {
-				setError(err.message);
-			})
-			.finally(() => {
-				setLoading(false);
-			});
+		try {
+			await deleteUserSchedule(id);
+			onClose();
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Failed to delete schedule");
+		} finally {
+			setLoading(false);
+		}
 	}
 
 	return (
@@ -94,8 +91,10 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 	);
 
 	function showOverlap(overlap: ScheduleOverlap) {
+		const overlapId = `${overlap.scheduleId}:${overlap.start.toISOString()}`;
+
 		return (
-			<div key={overlap.id} className={`rounded-xl border border-stone-200 bg-white p-3 shadow-sm ${hasPassed ? "opacity-60" : ""}`}>
+			<div key={overlapId} className={`rounded-xl border border-stone-200 bg-white p-3 shadow-sm ${hasPassed ? "opacity-60" : ""}`}>
 				<div className="flex items-center gap-2.5 sm:gap-3">
 					<Avatar name={overlap.user.name} rawUrl={overlap.user.avatarUrl} />
 
@@ -138,7 +137,7 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 		} else if (remainingMinutes === 0) {
 			duration = `${hours} hr${hours !== 1 ? "s" : ""}`;
 		} else {
-			duration = `${hours} hr${hours !== 1 ? "s" : ""} ${remainingMinutes} min${remainingMinutes !== 1 ? "s" : ""}`;
+			duration = `${hours} hr${hours !== 1 ? "s" : ""} ` + `${remainingMinutes} min${remainingMinutes !== 1 ? "s" : ""}`;
 		}
 
 		let durationStyle = "text-brand-muted";

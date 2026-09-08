@@ -1,10 +1,10 @@
 import { useState, type SubmitEvent } from "react";
 import { addMinutes, differenceInMinutes, format } from "date-fns";
-import type { ScheduleInstance } from "../../utils/types";
 import { usePlans } from "../../contexts/PlansContext";
 import ModalContainer from "../common/ModalContainer";
 import ModalHeader from "../common/ModalHeader";
 import Avatar from "../common/Avatar";
+import type { ScheduleInstance } from "../calendar/Instance";
 
 type ScheduleOverlap = ScheduleInstance["overlaps"][number];
 
@@ -38,7 +38,7 @@ export default function NewPlanModal({ overlap, userScheduleId, onClose }: NewPl
 		setIsSubmitting(true);
 
 		try {
-			await addPlan(overlap.user.id, title, comments, meetTime, location, [userScheduleId, overlap.id]);
+			await addPlan(overlap.user.id, title, comments, meetTime, location, [userScheduleId, overlap.scheduleId]);
 
 			onClose();
 		} catch (err) {

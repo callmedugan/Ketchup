@@ -17,7 +17,7 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const { addUserSchedule, fetchScheduleInstances } = useSchedule();
+	const { addUserSchedule, fetchScheduleData } = useSchedule();
 	const { user } = useAuth();
 
 	/* ========================================================================= */
@@ -44,7 +44,7 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 
 		addUserSchedule(user.id, date, startTime, endTime, repeatType, user.timezone)
 			.then(() => {
-				fetchScheduleInstances();
+				fetchScheduleData();
 				onClose();
 			})
 			.catch((err) => {

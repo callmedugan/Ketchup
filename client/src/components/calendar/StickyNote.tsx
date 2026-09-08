@@ -1,21 +1,22 @@
 import { format } from "date-fns";
 import { useState } from "react";
-import type { ScheduleInstance } from "../../utils/types";
+
+import type { ScheduleInstance } from "./Instance";
+
 import OverlapModal from "./OverlapModal";
 
 type StickyNoteProps = {
 	instance: ScheduleInstance;
-	onDeleted: () => void;
 };
 
-export default function StickyNote({ instance, onDeleted }: StickyNoteProps) {
+export default function StickyNote({ instance }: StickyNoteProps) {
 	const [isOpen, setIsOpen] = useState(false);
 
 	const hasPassed = instance.end <= new Date();
 
 	const overlaps = [...instance.overlaps].sort((a, b) => a.start.getTime() - b.start.getTime());
 
-	const overlapCount = new Set(instance.overlaps.map((overlap) => overlap.user.id)).size;
+	const overlapCount = new Set(overlaps.map((overlap) => overlap.user.id)).size;
 
 	return (
 		<>
@@ -41,7 +42,7 @@ export default function StickyNote({ instance, onDeleted }: StickyNoteProps) {
 				{/* corner */}
 				<div className="absolute right-0 top-0 h-4 w-4 bg-[#e8c95b] [clip-path:polygon(0_0,100%_0,100%_100%)]" />
 
-				{/* Time */}
+				{/* time */}
 				<div className="absolute left-2.5 right-2.5 top-4 flex flex-col gap-1 md:left-3 md:right-3">
 					<div className="flex items-baseline justify-between gap-2">
 						<span className="text-[7px] font-bold uppercase tracking-wide text-[#8a763d] md:text-[9px]">Start</span>
@@ -59,7 +60,8 @@ export default function StickyNote({ instance, onDeleted }: StickyNoteProps) {
 				{/* friends free */}
 				{overlapCount > 0 && !hasPassed && (
 					<div className="absolute inset-x-1.5 bottom-1.5 animate-float-notification truncate rounded-full border border-[#e0c96f] bg-white/70 px-1.5 py-1 text-center text-[9px] font-semibold text-[#66531c] md:inset-x-2 md:bottom-2 md:px-2 md:text-xs">
-						{overlapCount} friend{overlapCount > 1 && "s"} free!
+						{overlapCount} friend
+						{overlapCount > 1 && "s"} free!
 					</div>
 				)}
 			</button>
@@ -72,7 +74,6 @@ export default function StickyNote({ instance, onDeleted }: StickyNoteProps) {
 					end={instance.end}
 					noteOverlaps={overlaps}
 					onClose={() => setIsOpen(false)}
-					onDeleted={onDeleted}
 				/>
 			)}
 		</>

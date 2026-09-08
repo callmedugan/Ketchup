@@ -1,5 +1,6 @@
 import { primaryKey, uuid, pgTable, text, timestamp, varchar, pgEnum } from "drizzle-orm/pg-core";
 import { BIO_MAX_LENGTH, COMMENTS_MAX_LENGTH, EMAIL_MAX_LENGTH, TITLE_MAX_LENGTH } from "../data/constants.js";
+import z from "zod";
 
 /* ========================================================================= */
 //                        users
@@ -8,7 +9,6 @@ import { BIO_MAX_LENGTH, COMMENTS_MAX_LENGTH, EMAIL_MAX_LENGTH, TITLE_MAX_LENGTH
 
 export type UserInsert = typeof users.$inferInsert;
 export type UserPrivate = typeof users.$inferSelect;
-export type UserPublic = Pick<typeof users.$inferSelect, "id" | "name" | "avatarUrl" | "bio" | "timezone">;
 //response shape when user logs in
 export type UserLogin = Omit<typeof users.$inferSelect, "hashedPassword"> & { token: string; refreshToken: string };
 
@@ -27,10 +27,22 @@ export const users = pgTable("users", {
 	avatarUrl: varchar("avatar_url", { length: 255 }).notNull().default("ketchup"),
 });
 
+//all users public accessable data
+export const userPublicColumns = {
+	id: users.id,
+	name: users.name,
+	avatarUrl: users.avatarUrl,
+	bio: users.bio,
+	timezone: users.timezone,
+};
+export type UserPublic = Pick<typeof users.$inferSelect, keyof typeof userPublicColumns>;
+
 /* ========================================================================= */
 //                        schedules
 /* ========================================================================= */
 // TODO: add color, matched status? (seperate table for a sepcific overlap),
+
+export type ScheduleWithUserInfo = ScheduleRecord & { user: UserPublic };
 
 export type ScheduleRecord = typeof schedules.$inferSelect;
 export type ScheduleWithTimeZone = typeof schedules.$inferSelect & { timezone: string };
@@ -90,7 +102,9 @@ export const refreshTokens = pgTable("refresh_tokens", {
 export const friendStatusEnum = pgEnum("friend_status", ["requested", "accepted", "declined", "blocked"]);
 export type Friend = typeof friends.$inferInsert;
 export type FriendDetails = Pick<typeof friends.$inferSelect, "status"> &
-	Pick<typeof users.$inferSelect, "id" | "name" | "createdAt" | "updatedAt" | "bio" | "timezone" | "avatarUrl"> & { requestDirection: "sent" | "received" };
+	Pick<typeof users.$inferSelect, "id" | "name" | "createdAt" | "updatedAt" | "bio" | "timezone" | "avatarUrl"> & {
+		requestDirection: "sent" | "received";
+	};
 
 export const friends = pgTable(
 	"friends",
