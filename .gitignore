@@ -1,6 +1,5 @@
 .env
 .env.*
-drizzle.config.ts
 node_modules/
 dist/
 

@@ -105,6 +105,24 @@
 	@apply border-brand-red-light bg-brand-pink-light shadow-sm ring-1 ring-brand-red/10;
 }
 
+/* schedule card */
+@utility interactive-card {
+	@apply shadow-sm transition duration-150;
+	@apply hover:-translate-y-px hover:shadow-md;
+	@apply active:translate-y-0 active:scale-[0.99];
+}
+
+/* infinite scroll */
+/* hide scrollbar but preserve scrolling */
+.scrollbar-hidden {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+	display: none;
+}
+
 @keyframes float-notification {
 	0%,
 	100% {

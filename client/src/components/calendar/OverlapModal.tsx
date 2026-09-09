@@ -15,29 +15,33 @@ import HoldButton from "../common/HoldButton";
 type ScheduleOverlap = ScheduleInstance["overlaps"][number];
 
 type OverlapModalProps = {
-	id: string;
-	start: Date;
-	end: Date;
-	hasPassed: boolean;
-	noteOverlaps: ScheduleInstance["overlaps"];
+	instance: ScheduleInstance;
 	onClose: () => void;
 };
 
-export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, onClose }: OverlapModalProps) {
+export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	const { deleteUserSchedule } = useSchedule();
 	const navigate = useNavigate();
 
-	const overlaps = [...noteOverlaps].sort((a, b) => differenceInMinutes(b.end, b.start) - differenceInMinutes(a.end, a.start));
+	const hasPassed = instance.end <= new Date();
+
+	const overlaps = [...instance.overlaps].sort((a, b) => differenceInMinutes(b.end, b.start) - differenceInMinutes(a.end, a.start));
+
+	const friendCount = new Set(overlaps.map((overlap) => overlap.user.id)).size;
+
+	/* ========================================================================= */
+	//                        handlers
+	/* ========================================================================= */
 
 	async function handleDeleteSchedule() {
 		setLoading(true);
 		setError(null);
 
 		try {
-			await deleteUserSchedule(id);
+			await deleteUserSchedule(instance.scheduleId);
 			onClose();
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to delete schedule");
@@ -46,17 +50,37 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 		}
 	}
 
+	/* ========================================================================= */
+	//                        page
+	/* ========================================================================= */
+
 	return (
 		<ModalContainer onClose={onClose} className={hasPassed ? "bg-stone-100" : ""}>
-			<ModalHeader title="Who else is free?" onClose={onClose} />
+			<ModalHeader title="Availability" onClose={onClose} />
 
 			{/* Schedule info */}
-			<div className={`shrink-0 border-b border-stone-200 px-4 py-3 sm:px-5 ${hasPassed ? "bg-stone-50" : "bg-brand-surface"}`}>
-				<p className={`text-sm font-bold ${hasPassed ? "text-brand-muted/70" : "text-brand-text"}`}>{format(start, "EEEE, MMMM d")}</p>
+			<div
+				className={`
+					shrink-0 border-b border-stone-200 px-4 py-3 sm:px-5
+					${hasPassed ? "bg-stone-50" : "bg-brand-surface"}
+				`}
+			>
+				<div className="flex items-start justify-between gap-4">
+					<div className="min-w-0">
+						<p className={`text-sm font-bold ${hasPassed ? "text-brand-muted/70" : "text-brand-text"}`}>{format(instance.start, "EEEE, MMMM d")}</p>
 
-				<p className={`mt-0.5 text-xs font-medium sm:text-sm ${hasPassed ? "text-brand-muted/60" : "text-brand-muted"}`}>
-					{format(start, "p")} – {format(end, "p")}
-				</p>
+						<p className={`mt-0.5 text-xs font-medium sm:text-sm ${hasPassed ? "text-brand-muted/60" : "text-brand-muted"}`}>
+							{format(instance.start, "p")} – {format(instance.end, "p")}
+						</p>
+					</div>
+
+					{!hasPassed && friendCount > 0 && (
+						<div className="shrink-0 rounded-full border border-brand-red-light/40 bg-brand-pink-light px-2.5 py-1 text-[10px] font-bold text-brand-red sm:text-xs">
+							{friendCount} friend
+							{friendCount !== 1 && "s"} free
+						</div>
+					)}
+				</div>
 			</div>
 
 			{/* Overlaps */}
@@ -65,9 +89,9 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 					{overlaps.length > 0 ? (
 						overlaps.map(showOverlap)
 					) : (
-						<div className="rounded-xl border border-stone-200 bg-white px-4 py-5 text-center">
+						<div className="card px-4 py-6 text-center">
 							<p className={`text-xs font-medium sm:text-sm ${hasPassed ? "text-brand-muted/60" : "text-brand-muted"}`}>
-								None of your friends are free during this time.
+								No friends are free during this availability.
 							</p>
 						</div>
 					)}
@@ -83,18 +107,22 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 
 			{/* Footer */}
 			<div className="shrink-0 border-t border-stone-200 bg-brand-card p-3 sm:p-4">
-				<HoldButton variant="danger" onComplete={handleDeleteSchedule} disabled={loading} className="mt-3 w-full">
-					{loading ? "Deleting..." : "Delete schedule"}
+				<HoldButton variant="danger" onComplete={handleDeleteSchedule} disabled={loading} className="w-full">
+					{loading ? "Deleting..." : "Delete availability"}
 				</HoldButton>
 			</div>
 		</ModalContainer>
 	);
 
+	/* ========================================================================= */
+	//                        overlap
+	/* ========================================================================= */
+
 	function showOverlap(overlap: ScheduleOverlap) {
 		const overlapId = `${overlap.scheduleId}:${overlap.start.toISOString()}`;
 
 		return (
-			<div key={overlapId} className={`rounded-xl border border-stone-200 bg-white p-3 shadow-sm ${hasPassed ? "opacity-60" : ""}`}>
+			<div key={overlapId} className={`card p-3 ${hasPassed ? "opacity-60" : ""}`}>
 				<div className="flex items-center gap-2.5 sm:gap-3">
 					<Avatar name={overlap.user.name} rawUrl={overlap.user.avatarUrl} />
 
@@ -108,21 +136,28 @@ export default function OverlapModal({ id, noteOverlaps, start, end, hasPassed, 
 						navigate("/plans", {
 							state: {
 								newPlanOverlap: overlap,
-								userScheduleId: id,
+								userScheduleId: instance.scheduleId,
 							},
 						});
 					}}
-					className={`mt-2.5 w-full rounded-lg px-3 py-2 text-xs font-bold transition active:scale-[0.98] sm:text-sm ${
-						hasPassed
-							? "cursor-not-allowed bg-stone-200 text-brand-muted/70"
-							: "bg-brand-red text-white hover:bg-brand-red-dark active:bg-brand-red-dark"
-					}`}
+					className={`
+						mt-2.5 w-full
+						${
+							hasPassed
+								? "cursor-not-allowed rounded-xl bg-stone-200 px-3 py-2 text-xs font-bold text-brand-muted/70 sm:px-4 sm:py-2.5 sm:text-sm"
+								: "btn-primary"
+						}
+					`}
 				>
-					{hasPassed ? "Expired" : "Make plans!"}
+					{hasPassed ? "Expired" : "Make plans"}
 				</button>
 			</div>
 		);
 	}
+
+	/* ========================================================================= */
+	//                        friend info
+	/* ========================================================================= */
 
 	function showFriendInfo(overlap: ScheduleOverlap) {
 		const minutes = differenceInMinutes(overlap.end, overlap.start);

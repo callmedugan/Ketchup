@@ -6,10 +6,13 @@ import { format } from "date-fns";
 import ModalContainer from "../common/ModalContainer";
 import ModalHeader from "../common/ModalHeader";
 
-type NewScheduleModalProps = { onClose: () => void };
+type NewScheduleModalProps = {
+	onClose: () => void;
+	initialDate?: Date;
+};
 
-export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
-	const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+export default function NewScheduleModal({ onClose, initialDate }: NewScheduleModalProps) {
+	const [date, setDate] = useState(format(initialDate ?? new Date(), "yyyy-MM-dd"));
 	const [startTime, setStartTime] = useState("18:00");
 	const [endTime, setEndTime] = useState("21:00");
 	const [repeatType, setRepeatType] = useState<ScheduleRepeatType>("once");
@@ -87,8 +90,11 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 					{/* Quick select */}
 					<div className="grid grid-cols-4 gap-1.5 sm:gap-2">
 						<PresetButton label="Morning" onClick={() => setPreset("09:00", "12:00")} />
+
 						<PresetButton label="Afternoon" onClick={() => setPreset("12:00", "17:00")} />
+
 						<PresetButton label="Evening" onClick={() => setPreset("17:00", "22:00")} />
+
 						<PresetButton label="All Day" onClick={() => setPreset("00:00", "23:59")} />
 					</div>
 
@@ -104,7 +110,7 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 									id="availability-start"
 									type="time"
 									step={900}
-									required={true}
+									required
 									value={startTime}
 									onChange={(event) => setStartTime(event.target.value)}
 									className="w-full rounded-xl border border-stone-300 bg-white px-2.5 py-2 text-xs text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400 sm:px-3 sm:py-2.5 sm:text-sm"
@@ -120,7 +126,7 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 									id="availability-end"
 									type="time"
 									step={900}
-									required={true}
+									required
 									value={endTime}
 									onChange={(event) => setEndTime(event.target.value)}
 									className="w-full rounded-xl border border-stone-300 bg-white px-2.5 py-2 text-xs text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400 sm:px-3 sm:py-2.5 sm:text-sm"
@@ -164,7 +170,10 @@ export default function NewScheduleModal({ onClose }: NewScheduleModalProps) {
 	);
 }
 
-type PresetButtonProps = { label: string; onClick: () => void };
+type PresetButtonProps = {
+	label: string;
+	onClick: () => void;
+};
 
 function PresetButton({ label, onClick }: PresetButtonProps) {
 	return (
@@ -178,12 +187,16 @@ function PresetButton({ label, onClick }: PresetButtonProps) {
 	);
 }
 
-type StepTitleProps = { text: string; num: string };
+type StepTitleProps = {
+	text: string;
+	num: string;
+};
 
 function StepTitle({ text, num }: StepTitleProps) {
 	return (
 		<div className="mb-2 flex items-center gap-2 sm:mb-3 sm:gap-3">
 			<div className="modal-step-number">{num}</div>
+
 			<div>
 				<p className="text-xs font-bold text-stone-800 sm:text-sm">{text}</p>
 			</div>

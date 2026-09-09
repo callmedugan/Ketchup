@@ -23,7 +23,7 @@ export function PlansPage() {
 	const [showNewPlanModal, setShowNewPlanModal] = useState(newPlanOverlap !== undefined && userScheduleId !== undefined);
 
 	return (
-		<PageContainer title="Your plans" description="Keep track of what's going down.">
+		<PageContainer>
 			<PlansSplitView />
 
 			{showNewPlanModal && newPlanOverlap && userScheduleId && (

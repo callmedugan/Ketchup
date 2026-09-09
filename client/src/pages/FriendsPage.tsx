@@ -7,7 +7,7 @@ export function FriendsPage() {
 	/* ========================================================================= */
 
 	return (
-		<PageContainer title="Your friends" description="See who's free to hang out.">
+		<PageContainer>
 			<FriendsSplitView />
 		</PageContainer>
 	);

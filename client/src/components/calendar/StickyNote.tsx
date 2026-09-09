@@ -11,11 +11,8 @@ type StickyNoteProps = {
 
 export default function StickyNote({ instance }: StickyNoteProps) {
 	const [isOpen, setIsOpen] = useState(false);
-
 	const hasPassed = instance.end <= new Date();
-
 	const overlaps = [...instance.overlaps].sort((a, b) => a.start.getTime() - b.start.getTime());
-
 	const overlapCount = new Set(overlaps.map((overlap) => overlap.user.id)).size;
 
 	return (
@@ -66,16 +63,7 @@ export default function StickyNote({ instance }: StickyNoteProps) {
 				)}
 			</button>
 
-			{isOpen && (
-				<OverlapModal
-					id={instance.scheduleId}
-					hasPassed={hasPassed}
-					start={instance.start}
-					end={instance.end}
-					noteOverlaps={overlaps}
-					onClose={() => setIsOpen(false)}
-				/>
-			)}
+			{isOpen && <OverlapModal instance={instance} onClose={() => setIsOpen(false)} />}
 		</>
 	);
 }

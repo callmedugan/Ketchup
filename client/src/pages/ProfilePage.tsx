@@ -7,11 +7,7 @@ export function ProfilePage() {
 	const [loading] = useState(false);
 	const [error] = useState<string | null>(null);
 
-	return (
-		<PageContainer title="Your profile" description="Tell your friends a little bit about yourself.">
-			{getContent()}
-		</PageContainer>
-	);
+	return <PageContainer>{getContent()}</PageContainer>;
 
 	function getContent() {
 		if (error) {

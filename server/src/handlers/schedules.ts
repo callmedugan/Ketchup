@@ -5,7 +5,8 @@ import { addScheduleToDb, deleteScheduleFromDb, getScheduleByUserFromDb, getUser
 import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 import { logInfo } from "./logging.js";
 import { ScheduleRepeatType, scheduleRepeatTypeRank } from "../db/schema.js";
-import { getDay, getHours, getMinutes, isBefore, isSameDay, set, startOfDay } from "date-fns";
+import { addDays, format, getDay, getHours, getMinutes, isBefore, isSameDay, set, startOfDay } from "date-fns";
+import { MAX_SCHEDULES_PER_DAY } from "../data/constants.js";
 
 //used to validate timezones
 export const timezoneSchema = z
@@ -47,17 +48,27 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	const { startTime, endTime, repeatType, timezone } = body.data;
 
 	//convert to utc to compare to db
-	const start = fromZonedTime(startTime, timezone);
-	const end = fromZonedTime(endTime, timezone);
+	const zonedStart = fromZonedTime(startTime, timezone);
+	const zonedEnd = fromZonedTime(endTime, timezone);
 
-	// check for overlapping schedules
+	// check user's schedules
 	const userSchedules = await getScheduleByUserFromDb(userId);
+
+	// check daily schedule limit
+	validateScheduleDailyLimit(
+		userSchedules,
+		{
+			startTime: zonedStart,
+			repeatType,
+		},
+		timezone,
+	);
 
 	//check to see if overlap occurs with any of the user's schedules
 	for (const schedule of userSchedules) {
 		const overlap = getTimeOverlapRepeating(
 			{ start: schedule.startTime, end: schedule.endTime, repeatType: schedule.repeatType },
-			{ start, end, repeatType },
+			{ start: zonedStart, end: zonedEnd, repeatType },
 		);
 
 		//give user a message for when the new schedule overlaps
@@ -73,7 +84,7 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	}
 
 	// call db
-	const result = await addScheduleToDb({ userId, repeatType, startTime, endTime });
+	const result = await addScheduleToDb({ userId, repeatType, startTime: zonedStart, endTime: zonedEnd });
 	if (result === undefined) throw new Error("Something went wrong adding the schedule to the db");
 
 	logInfo("schedule.created", { userId, scheduleId: result.id, repeatType: result.repeatType });
@@ -201,6 +212,118 @@ function minutesToDate(minutes: number, date: Date, timezone: string) {
 
 function combineDateAndTime(date: Date, time: Date): Date {
 	return set(date, { hours: time.getHours(), minutes: time.getMinutes(), seconds: time.getSeconds(), milliseconds: 0 });
+}
+
+//#endregion
+
+/* ========================================================================= */
+//                        schedule limits
+/* ========================================================================= */
+
+//#region schedule limits
+
+type ScheduleForDailyLimitCheck = {
+	startTime: Date;
+	repeatType: ScheduleRepeatType;
+};
+
+//main function
+function validateScheduleDailyLimit(schedules: ScheduleForDailyLimitCheck[], newSchedule: ScheduleForDailyLimitCheck, timezone: string): void {
+	const candidateDays = getCandidateDays(schedules, newSchedule, timezone);
+
+	//define before loop
+	const newScheduleForLimit: ScheduleForDailyLimitCheck = {
+		startTime: newSchedule.startTime,
+		repeatType: newSchedule.repeatType,
+	};
+
+	for (const day of candidateDays) {
+		//for each day pass if not on the new schedule day
+		if (!scheduleOccursOnDay(newScheduleForLimit, day, timezone)) continue;
+		//get count
+		const existingCount = countSchedulesForDay(schedules, day, timezone);
+		//throw error if over count
+		if (existingCount >= MAX_SCHEDULES_PER_DAY) {
+			throw new BadRequestError(
+				`You can only have ${MAX_SCHEDULES_PER_DAY} availabilities per day. Remove one from ${format(toZonedTime(day, timezone), "PPP")}`,
+			);
+		}
+	}
+}
+
+//gets the count for a day
+function countSchedulesForDay(schedules: ScheduleForDailyLimitCheck[], date: Date, timezone: string): number {
+	return schedules.filter((schedule) => scheduleOccursOnDay(schedule, date, timezone)).length;
+}
+
+//helper to check if a schedules occurs on a day with a given start and repeat
+function scheduleOccursOnDay(schedule: ScheduleForDailyLimitCheck, day: Date, timezone: string): boolean {
+	const scheduleDate = toZonedTime(schedule.startTime, timezone);
+	const targetDate = toZonedTime(day, timezone);
+
+	// Recurring schedule hasn't started yet
+	if (startOfDay(targetDate) < startOfDay(scheduleDate)) return false;
+	if (schedule.repeatType === "daily") return true;
+	if (schedule.repeatType === "weekly") return getDay(scheduleDate) === getDay(targetDate);
+
+	// "once"
+	return isSameDay(scheduleDate, targetDate);
+}
+
+function getCandidateDays(schedules: ScheduleForDailyLimitCheck[], newSchedule: ScheduleForDailyLimitCheck, timezone: string): Date[] {
+	const candidateDays: Date[] = [];
+
+	const newStart = toZonedTime(newSchedule.startTime, timezone);
+
+	// Include every existing one-time schedule date.
+	// A future "once" schedule could conflict with a new recurring schedule.
+	for (const schedule of schedules) {
+		if (schedule.repeatType === "once") {
+			candidateDays.push(toZonedTime(schedule.startTime, timezone));
+		}
+	}
+
+	// If the new schedule itself is "once", its date is all we really need
+	// in addition to the existing once dates above.
+	if (newSchedule.repeatType === "once") {
+		candidateDays.push(newStart);
+		return getUniqueDays(candidateDays);
+	}
+
+	// Find the latest start among recurring schedules.
+	// We want our 7-day test window to happen after all recurring
+	// schedules involved have started.
+	let recurringWindowStart = newStart;
+
+	for (const schedule of schedules) {
+		if (schedule.repeatType === "once") {
+			continue;
+		}
+
+		const scheduleStart = toZonedTime(schedule.startTime, timezone);
+
+		if (scheduleStart > recurringWindowStart) {
+			recurringWindowStart = scheduleStart;
+		}
+	}
+
+	// Seven days covers every possible weekday combination.
+	for (let i = 0; i < 7; i++) {
+		candidateDays.push(addDays(recurringWindowStart, i));
+	}
+
+	return getUniqueDays(candidateDays);
+}
+
+function getUniqueDays(days: Date[]): Date[] {
+	const uniqueDays = new Map<string, Date>();
+
+	for (const day of days) {
+		const key = format(day, "yyyy-MM-dd");
+		uniqueDays.set(key, day);
+	}
+
+	return [...uniqueDays.values()];
 }
 
 //#endregion
