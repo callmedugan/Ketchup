@@ -1,95 +1,71 @@
 // MobileCalendar.tsx
 
-import { useMemo } from "react";
-import { format, isSameMonth } from "date-fns";
+import { addDays, format, startOfWeek } from "date-fns";
 
 import type { ScheduleInstance } from "./Instance";
 
-import StickyNote from "./StickyNote";
-import ScrollableContainer from "../common/ScrollableContainer";
+import ScheduleCard from "./ScheduleCard";
+import InfiniteWeekScrollMobile from "../common/InfiniteWeekScrollMobile";
 
 type MobileCalendarProps = {
-	weekDays: Date[];
-	schedules: ScheduleInstance[];
-	weekOffset: number;
-	setWeekOffset: React.Dispatch<React.SetStateAction<number>>;
+	initialWeek: Date;
+	minWeek: Date;
+	maxWeek: Date;
+
+	getSchedulesForWeek: (weekStart: Date) => ScheduleInstance[];
+
+	onAddAvailability: (date: Date) => void;
 };
 
-export default function MobileCalendar({ weekDays, schedules, weekOffset, setWeekOffset }: MobileCalendarProps) {
-	const schedulesByDay = useMemo(() => {
-		const map = new Map<string, ScheduleInstance[]>();
-
-		for (const schedule of schedules) {
-			const key = format(schedule.start, "yyyy-MM-dd");
-
-			const daySchedules = map.get(key) ?? [];
-
-			daySchedules.push(schedule);
-			map.set(key, daySchedules);
-		}
-
-		return map;
-	}, [schedules]);
-
-	function getSchedulesForDay(day: Date): ScheduleInstance[] {
+export default function MobileCalendar({ initialWeek, minWeek, maxWeek, getSchedulesForWeek, onAddAvailability }: MobileCalendarProps) {
+	function getSchedulesForDay(day: Date, schedules: ScheduleInstance[]): ScheduleInstance[] {
 		const key = format(day, "yyyy-MM-dd");
 
-		return schedulesByDay.get(key) ?? [];
+		return schedules.filter((schedule) => format(schedule.start, "yyyy-MM-dd") === key);
 	}
 
-	return (
-		<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white">
-			{showHeader()}
+	/* ========================================================================= */
+	//                        page
+	/* ========================================================================= */
 
-			<ScrollableContainer className="py-2">{weekDays.map(showDay)}</ScrollableContainer>
+	return (
+		<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-stone-200 bg-brand-page">
+			<InfiniteWeekScrollMobile initialWeek={initialWeek} minWeek={minWeek} maxWeek={maxWeek} renderWeek={showWeek} />
 		</div>
 	);
 
 	/* ========================================================================= */
-	//                        header
+	//                        week
 	/* ========================================================================= */
 
-	function showHeader() {
-		const weekStart = weekDays[0];
-		const weekEnd = weekDays[weekDays.length - 1];
+	function showWeek(weekStart: Date) {
+		const start = startOfWeek(weekStart, {
+			weekStartsOn: 0,
+		});
 
-		if (!weekStart || !weekEnd) return null;
+		const weekDays = Array.from({ length: 7 }, (_, index) => addDays(start, index));
 
-		const dateRange = isSameMonth(weekStart, weekEnd)
-			? `${format(weekStart, "MMM d")} - ${format(weekEnd, "d, yyyy")}`
-			: `${format(weekStart, "MMM d")} - ${format(weekEnd, "MMM d, yyyy")}`;
+		const schedules = getSchedulesForWeek(start);
 
 		return (
-			<div className="flex shrink-0 items-center justify-between border-b border-brand-red-dark bg-brand-red px-3 py-3">
-				<button
-					type="button"
-					onClick={() => setWeekOffset((prev) => prev - 1)}
-					className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 pb-1 text-brand-cream transition active:scale-95 active:bg-white/20"
-				>
-					‹
-				</button>
+			<section>
+				<div className="flex flex-col gap-3">
+					{weekDays.map((day) => (
+						<div key={day.toISOString()}>
+							{/* Month header */}
+							{day.getDate() === 1 && (
+								<div className="mb-3 overflow-hidden rounded-xl border border-brand-red-dark bg-brand-red">
+									<p className="px-4 py-2.5 text-center text-sm font-bold text-brand-cream">{format(day, "MMMM")}</p>
+								</div>
+							)}
 
-				<div className="text-center">
-					<h2 className="text-base font-bold text-brand-cream">{dateRange}</h2>
-
-					<button
-						type="button"
-						onClick={() => setWeekOffset(0)}
-						disabled={weekOffset === 0}
-						className="mt-1 rounded-full border border-brand-cream/30 bg-white/10 px-2.5 py-0.5 text-[10px] font-bold text-brand-cream transition active:scale-95 active:bg-white/20 disabled:border-brand-cream/10 disabled:bg-transparent disabled:text-brand-cream/40"
-					>
-						This week
-					</button>
+							{showDay(day, schedules)}
+						</div>
+					))}
 				</div>
-
-				<button
-					type="button"
-					onClick={() => setWeekOffset((prev) => prev + 1)}
-					className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 pb-1 text-brand-cream transition active:scale-95 active:bg-white/20"
-				>
-					›
-				</button>
-			</div>
+				{/* Week divider */}
+				<div className="mx-auto my-2 h-1 w-full rounded-full bg-brand-red/25" />
+			</section>
 		);
 	}
 
@@ -97,38 +73,77 @@ export default function MobileCalendar({ weekDays, schedules, weekOffset, setWee
 	//                        day
 	/* ========================================================================= */
 
-	function showDay(day: Date) {
+	function showDay(day: Date, schedules: ScheduleInstance[]) {
+		const daySchedules = getSchedulesForDay(day, schedules);
+
 		const isToday = format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
-
-		const daySchedules = getSchedulesForDay(day);
-
-		const hasSchedules = daySchedules.length > 0;
 
 		return (
 			<div
-				key={day.toISOString()}
-				className={`mx-3 my-2 shrink-0 overflow-hidden rounded-xl border border-stone-200 bg-brand-card shadow-sm ${
-					hasSchedules ? "h-40" : "h-auto"
-				}`}
+				className={`
+					overflow-hidden rounded-xl border
+					bg-brand-card shadow-sm
+					${isToday ? "border-brand-red/40" : "border-stone-200"}
+				`}
 			>
-				<div className={`flex items-center justify-between bg-[#f3e4d7] px-4 py-2 ${hasSchedules ? "border-b border-stone-200" : ""}`}>
-					<div className="flex items-baseline gap-2">
-						<span className="text-sm font-bold text-brand-text">{format(day, "EEE")}</span>
+				{/* Day header */}
+				<div
+					className={`
+						flex items-center justify-between
+						border-b border-stone-200
+						px-3 py-2
+						${isToday ? "bg-[#f4ddd6]" : "bg-[#f3e4d7]"}
+					`}
+				>
+					<div className="flex items-center gap-2.5">
+						<div
+							className={`
+								flex h-8 w-8 shrink-0
+								items-center justify-center
+								rounded-full
+								text-xs font-bold
+								${isToday ? "bg-brand-red text-white" : "bg-white/60 text-brand-text"}
+							`}
+						>
+							{format(day, "d")}
+						</div>
 
-						<span className="text-xs font-medium text-brand-muted">{format(day, "MMM d")}</span>
+						<div>
+							<p className="text-sm font-bold leading-tight text-brand-text">{format(day, "EEEE")}</p>
+						</div>
 					</div>
 
-					{isToday && <span className="rounded-full bg-brand-red px-2 py-1 text-[10px] font-bold text-white">Today</span>}
+					<div className="flex items-center gap-2">
+						{isToday && <span className="rounded-full bg-brand-red/10 px-2 py-1 text-[9px] font-bold text-brand-red-dark">Today</span>}
+
+						{daySchedules.length < 4 && (
+							<button
+								type="button"
+								onClick={() => onAddAvailability(day)}
+								className="
+									flex h-8 w-8 items-center justify-center
+									rounded-lg
+									border border-stone-300
+									bg-white/40
+									text-base font-bold text-brand-muted
+									transition
+									active:scale-95 active:bg-white
+								"
+								aria-label={`Add availability for ${format(day, "MMMM d")}`}
+							>
+								+
+							</button>
+						)}
+					</div>
 				</div>
 
-				{hasSchedules && (
-					<ScrollableContainer direction="horizontal">
-						<div className="flex h-full gap-2.5 p-3">
-							{daySchedules.map((schedule) => (
-								<StickyNote key={schedule.id} instance={schedule} />
-							))}
-						</div>
-					</ScrollableContainer>
+				{/* Schedules */}
+				{daySchedules.length > 0 && (
+					<div className="flex flex-col gap-2 p-3">
+						{daySchedules.map((schedule) => (
+							<ScheduleCard key={schedule.id} instance={schedule} />
+						))}
+					</div>
 				)}
 			</div>
 		);

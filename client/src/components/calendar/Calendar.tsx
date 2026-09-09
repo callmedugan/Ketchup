@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { addDays, addWeeks, format, startOfWeek, subMonths, addMonths } from "date-fns";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { addMonths, addWeeks, format, startOfWeek, subMonths } from "date-fns";
 
 import { useSchedule } from "../../contexts/SchedulesContext";
 
@@ -8,42 +8,19 @@ import type { ScheduleInstance } from "./Instance";
 import DesktopCalendar from "./DesktopCalendar";
 import MobileCalendar from "./MobileCalendar";
 import NewScheduleModal from "./NewScheduleModal";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 
 export default function Calendar() {
 	const { buildScheduleInstances } = useSchedule();
 
-	const [weekOffset, setWeekOffset] = useState(0);
 	const [newScheduleDate, setNewScheduleDate] = useState<Date | null>(null);
+	const isDesktop = useMediaQuery("(min-width: 768px)");
 
 	/* ========================================================================= */
-	//                        mobile week
+	//                        calendar bounds
 	/* ========================================================================= */
 
-	//#region mobile week
-
-	const weekStart = useMemo(
-		() =>
-			startOfWeek(addWeeks(new Date(), weekOffset), {
-				weekStartsOn: 0,
-			}),
-		[weekOffset],
-	);
-
-	const weekEnd = useMemo(() => addWeeks(weekStart, 1), [weekStart]);
-
-	const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
-
-	const weekSchedule = useMemo(() => {
-		return buildScheduleInstances(weekStart, weekEnd).sort((a, b) => a.start.getTime() - b.start.getTime());
-	}, [buildScheduleInstances, weekStart, weekEnd]);
-
-	//#endregion
-
-	/* ========================================================================= */
-	//                        desktop bounds
-	/* ========================================================================= */
-
-	//#region desktop bounds
+	//#region calendar bounds
 
 	const currentWeek = useMemo(
 		() =>
@@ -72,16 +49,19 @@ export default function Calendar() {
 	//#endregion
 
 	/* ========================================================================= */
-	//                        desktop schedule cache
+	//                        schedule cache
 	/* ========================================================================= */
 
-	//#region desktop schedule cache
+	//#region schedule cache
 
 	const scheduleCache = useRef(new Map<string, ScheduleInstance[]>());
 
-	useEffect(() => {
+	const previousBuildScheduleInstances = useRef(buildScheduleInstances);
+
+	if (previousBuildScheduleInstances.current !== buildScheduleInstances) {
 		scheduleCache.current.clear();
-	}, [buildScheduleInstances]);
+		previousBuildScheduleInstances.current = buildScheduleInstances;
+	}
 
 	const getSchedulesForWeek = useCallback(
 		(weekStart: Date): ScheduleInstance[] => {
@@ -105,14 +85,13 @@ export default function Calendar() {
 	);
 
 	//#endregion
-
 	/* ========================================================================= */
 	//                        page
 	/* ========================================================================= */
 
 	return (
 		<div className="flex min-h-0 min-w-0 flex-1 flex-col">
-			<div className="hidden min-h-0 min-w-0 flex-1 md:flex">
+			{isDesktop ? (
 				<DesktopCalendar
 					currentWeek={currentWeek}
 					minWeek={minWeek}
@@ -120,11 +99,15 @@ export default function Calendar() {
 					getSchedulesForWeek={getSchedulesForWeek}
 					onAddAvailability={setNewScheduleDate}
 				/>
-			</div>
-
-			<div className="flex min-h-0 min-w-0 flex-1 md:hidden">
-				<MobileCalendar weekDays={weekDays} schedules={weekSchedule} weekOffset={weekOffset} setWeekOffset={setWeekOffset} />
-			</div>
+			) : (
+				<MobileCalendar
+					initialWeek={currentWeek}
+					minWeek={minWeek}
+					maxWeek={maxWeek}
+					getSchedulesForWeek={getSchedulesForWeek}
+					onAddAvailability={setNewScheduleDate}
+				/>
+			)}
 
 			{newScheduleDate && <NewScheduleModal initialDate={newScheduleDate} onClose={() => setNewScheduleDate(null)} />}
 		</div>

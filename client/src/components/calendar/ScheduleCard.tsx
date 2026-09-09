@@ -25,7 +25,7 @@ export default function ScheduleCard({ instance }: ScheduleCardProps) {
 				onClick={() => setIsOpen(true)}
 				className={`
 					interactive-card
-					relative w-full min-w-0 overflow-hidden
+					relative w-full md:w-auto min-w-0 overflow-hidden
 					rounded-lg border px-2 py-1.5 text-left
 					cursor-pointer
 					hover:brightness-[1.02]
