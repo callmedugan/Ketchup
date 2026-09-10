@@ -101,14 +101,12 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 		repeatType: ScheduleRepeatType,
 		timezone: string,
 	): Promise<void> {
-		const scheduleStart = new Date(`${date}T${startTime}`);
-		const scheduleEnd = new Date(`${date}T${endTime}`);
 		const response = await authFetch("/api/schedules", {
 			method: "POST",
 			body: JSON.stringify({
 				userId,
-				startTime: scheduleStart.toISOString(),
-				endTime: scheduleEnd.toISOString(),
+				startTime: `${date}T${startTime}`,
+				endTime: `${date}T${endTime}`,
 				repeatType,
 				timezone,
 			}),
@@ -121,7 +119,6 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 
 		await fetchScheduleData();
 	}
-
 	/* ========================================================================= */
 	// instances
 	/* ========================================================================= */
