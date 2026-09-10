@@ -25,14 +25,13 @@ export const timezoneSchema = z
 	);
 export type Timezone = z.infer<typeof timezoneSchema>;
 
-const createScheduleSchema = z
-	.object({
-		startTime: z.coerce.date({ error: "Start time cannot be blank" }),
-		endTime: z.coerce.date({ error: "End time cannot be blank" }),
-		repeatType: z.enum(["once", "daily", "weekly"], { error: "Invalid repeat type" }),
-		timezone: timezoneSchema,
-	})
-	.refine((data) => data.endTime > data.startTime, { message: "End time must be after start time", path: ["endTime"] });
+//pass in dates as strings because coercing to dates will use the local machine time to convert and time will be wrong
+const createScheduleSchema = z.object({
+	startTime: z.string().min(1, "Start time cannot be blank"),
+	endTime: z.string().min(1, "End time cannot be blank"),
+	repeatType: z.enum(["once", "daily", "weekly"]),
+	timezone: timezoneSchema,
+});
 
 const deleteScheduleSchema = z.object({ id: z.uuid().min(1, "Id missing or blank") });
 
@@ -48,8 +47,9 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	const { startTime, endTime, repeatType, timezone } = body.data;
 
 	//convert to utc to compare to db
-	const zonedStart = fromZonedTime(startTime, timezone);
-	const zonedEnd = fromZonedTime(endTime, timezone);
+	const utcStart = fromZonedTime(startTime, timezone);
+	const utcEnd = fromZonedTime(endTime, timezone);
+	if (utcEnd <= utcStart) throw new BadRequestError("End time must be after start time");
 
 	// check user's schedules
 	const userSchedules = await getScheduleByUserFromDb(userId);
@@ -58,7 +58,7 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	validateScheduleDailyLimit(
 		userSchedules,
 		{
-			startTime: zonedStart,
+			startTime: utcStart,
 			repeatType,
 		},
 		timezone,
@@ -68,7 +68,7 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	for (const schedule of userSchedules) {
 		const overlap = getTimeOverlapRepeating(
 			{ start: schedule.startTime, end: schedule.endTime, repeatType: schedule.repeatType },
-			{ start: zonedStart, end: zonedEnd, repeatType },
+			{ start: utcStart, end: utcEnd, repeatType },
 		);
 
 		//give user a message for when the new schedule overlaps
@@ -84,7 +84,7 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 	}
 
 	// call db - make sure to use the utc time
-	const result = await addScheduleToDb({ userId, repeatType, startTime: zonedStart, endTime: zonedEnd });
+	const result = await addScheduleToDb({ userId, repeatType, startTime: utcStart, endTime: utcEnd });
 	if (result === undefined) throw new Error("Something went wrong adding the schedule to the db");
 
 	logInfo("schedule.created", { userId, scheduleId: result.id, repeatType: result.repeatType });
