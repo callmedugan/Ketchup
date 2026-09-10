@@ -9,16 +9,13 @@ type MobileCalendarProps = {
 	initialWeek: Date;
 	minWeek: Date;
 	maxWeek: Date;
-
 	getSchedulesForWeek: (weekStart: Date) => ScheduleInstance[];
-
 	onAddAvailability: (date: Date) => void;
 };
 
 export default function MobileCalendar({ initialWeek, minWeek, maxWeek, getSchedulesForWeek, onAddAvailability }: MobileCalendarProps) {
 	function getSchedulesForDay(day: Date, schedules: ScheduleInstance[]): ScheduleInstance[] {
 		const key = format(day, "yyyy-MM-dd");
-
 		return schedules.filter((schedule) => format(schedule.start, "yyyy-MM-dd") === key);
 	}
 
@@ -75,7 +72,7 @@ export default function MobileCalendar({ initialWeek, minWeek, maxWeek, getSched
 				</div>
 
 				{/* Week divider */}
-				<div className="mx-auto my-2 h-1 w-full rounded-full bg-brand-red/25" />
+				<div className="mx-auto my-2 h-1 w-full rounded-full bg-brand-red/75" />
 			</section>
 		);
 	}
@@ -102,40 +99,17 @@ export default function MobileCalendar({ initialWeek, minWeek, maxWeek, getSched
 		/* ========================================================================= */
 		//                        styles
 		/* ========================================================================= */
-		const headerBackground = isPast ? "bg-stone-300" : isAlternateWeek ? "bg-brand-pink" : "bg-[#eadcca]";
-		const cardBackground = isPast ? "bg-stone-100" : isEmpty ? headerBackground : "bg-brand-card";
+		const headerBackground = isPast ? "bg-stone-300" : isAlternateWeek ? "bg-brand-pink" : "bg-[#f3dfcf]";
+		const cardBackground = isPast ? "bg-stone-100" : isAlternateWeek ? "bg-brand-pink/5" : "bg-[#f3dfcf]/10";
 
-		const borderColor = isToday
-			? "border-brand-red"
-			: isPast
-				? "border-stone-300"
-				: isAlternateWeek
-					? "border-brand-red/50"
-					: "border-brand-red-dark/35";
+		const borderColor = isToday ? "border-brand-red-dark" : isPast ? "border-stone-300" : "border-brand-red-dark/50";
 
-		const headerBorder = isEmpty
-			? "border-b-0"
-			: isPast
-				? "border-b border-stone-300"
-				: isAlternateWeek
-					? "border-b border-brand-red/45"
-					: "border-b border-brand-red-dark/30";
+		const headerBorder = isEmpty ? "border-b-0" : isPast ? "border-b border-stone-300" : "border-b border-brand-red/45";
 
 		const dayTextColor = isPast ? "text-stone-500" : "text-brand-text";
-
-		const dateCircleStyle = isToday
-			? "bg-brand-red text-white"
-			: isPast
-				? "bg-stone-200 text-stone-500"
-				: isAlternateWeek
-					? "bg-white/70 text-brand-red-dark"
-					: "bg-brand-card text-brand-red-dark";
-
-		const addButtonStyle = isAlternateWeek
-			? "border-brand-red/35 bg-white/50 text-brand-red-dark hover:bg-white/80 active:bg-white"
-			: "border-brand-red-dark/30 bg-brand-card/60 text-brand-red-dark hover:bg-brand-card active:bg-white";
-
-		const todayBadgeStyle = "bg-brand-red/10 text-brand-red-dark ring-1 ring-brand-red/20";
+		const dateCircleStyle = isToday ? "bg-brand-red text-white" : isPast ? "bg-stone-200 text-stone-500" : "bg-brand-card text-brand-red-dark";
+		const addButtonStyle = "border-brand-red/35 bg-white/50 text-brand-red-dark active:bg-white";
+		const todayBadgeStyle = "bg-[#fff7e8] text-brand-red-dark ring-1 ring-[#ead9bf]";
 
 		const scheduleContainerStyle = "flex flex-col gap-2 p-3";
 		/* ========================================================================= */
@@ -201,13 +175,13 @@ export default function MobileCalendar({ initialWeek, minWeek, maxWeek, getSched
 								type="button"
 								onClick={() => onAddAvailability(day)}
 								className={`
-								flex h-8 w-8 items-center justify-center
-								rounded-lg border
-								text-base font-bold
-								transition
-								active:scale-95
-								${addButtonStyle}
-							`}
+									flex h-8 w-8 items-center justify-center
+									rounded-lg border 
+									text-base font-bold leading-none
+									transition
+									active:scale-95
+									${addButtonStyle}
+								`}
 								aria-label={`Add availability for ${format(day, "MMMM d")}`}
 							>
 								+
