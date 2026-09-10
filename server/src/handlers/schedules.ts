@@ -83,7 +83,7 @@ export async function handlerCreateSchedule(req: Request, res: Response) {
 		}
 	}
 
-	// call db
+	// call db - make sure to use the utc time
 	const result = await addScheduleToDb({ userId, repeatType, startTime: zonedStart, endTime: zonedEnd });
 	if (result === undefined) throw new Error("Something went wrong adding the schedule to the db");
 

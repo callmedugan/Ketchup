@@ -128,7 +128,8 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 
 	const buildScheduleInstances = useCallback(
 		(rangeStart: Date, rangeEnd: Date): ScheduleInstance[] => {
-			return buildUserInstances(userSchedules, friendSchedules, rangeStart, rangeEnd);
+			if (!user) return [];
+			return buildUserInstances(userSchedules, friendSchedules, rangeStart, rangeEnd, user.timezone);
 		},
 		[userSchedules, friendSchedules],
 	);

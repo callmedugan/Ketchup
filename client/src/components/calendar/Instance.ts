@@ -1,4 +1,5 @@
 import { addDays, addWeeks } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 import { z } from "zod";
 
 /* ========================================================================= */
@@ -50,11 +51,15 @@ export type ScheduleInstance = z.infer<typeof scheduleInstanceSchema>;
 //                        instance building
 /* ========================================================================= */
 
+//creates instances for user and all friends, finds overlap, and updates the user instances
+//also converts everything to the user timezone
+//everything should come in as utc
 export function buildUserInstances(
 	userSchedules: ScheduleWithUserInfo[],
 	friendSchedules: ScheduleWithUserInfo[],
 	rangeStart: Date,
 	rangeEnd: Date,
+	userTimezone: string,
 ): ScheduleInstance[] {
 	//build both set of instances to compare overlaps
 	const userInstances = buildInstances(userSchedules, rangeStart, rangeEnd);
@@ -67,11 +72,15 @@ export function buildUserInstances(
 			if (!overlap) continue;
 			userInstance.overlaps.push({
 				scheduleId: friendInstance.scheduleId,
-				start: overlap.start,
-				end: overlap.end,
+				//convert
+				start: toZonedTime(overlap.start, userTimezone),
+				end: toZonedTime(overlap.end, userTimezone),
 				user: friendInstance.user,
 			});
 		}
+		//finally convert the user instance after we have compared
+		userInstance.start = toZonedTime(userInstance.start, userTimezone);
+		userInstance.end = toZonedTime(userInstance.end, userTimezone);
 	}
 	return userInstances;
 }
