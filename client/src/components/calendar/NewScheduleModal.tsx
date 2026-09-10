@@ -79,7 +79,7 @@ export default function NewScheduleModal({ onClose, initialDate }: NewScheduleMo
 						min={format(new Date(), "yyyy-MM-dd")}
 						value={date}
 						onChange={(event) => setDate(event.target.value)}
-						className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 sm:py-2.5 sm:text-sm"
+						className="mx-auto block w-[96%] rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 sm:w-full sm:py-2.5 sm:text-sm"
 					/>
 				</section>
 
@@ -113,7 +113,7 @@ export default function NewScheduleModal({ onClose, initialDate }: NewScheduleMo
 									required
 									value={startTime}
 									onChange={(event) => setStartTime(event.target.value)}
-									className="w-full rounded-xl border border-stone-300 bg-white px-2.5 py-2 text-xs text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400 sm:px-3 sm:py-2.5 sm:text-sm"
+									className="w-full min-w-0 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-[11px] text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 sm:rounded-xl sm:px-3 sm:py-2.5 sm:text-sm"
 								/>
 							</div>
 
@@ -129,7 +129,7 @@ export default function NewScheduleModal({ onClose, initialDate }: NewScheduleMo
 									required
 									value={endTime}
 									onChange={(event) => setEndTime(event.target.value)}
-									className="w-full rounded-xl border border-stone-300 bg-white px-2.5 py-2 text-xs text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400 sm:px-3 sm:py-2.5 sm:text-sm"
+									className="w-full min-w-0 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-[11px] text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 sm:rounded-xl sm:px-3 sm:py-2.5 sm:text-sm"
 								/>
 							</div>
 						</div>

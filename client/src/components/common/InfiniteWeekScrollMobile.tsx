@@ -3,18 +3,31 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 
 type InfiniteWeekScrollMobileProps = {
 	initialWeek: Date;
+	initialDate?: Date;
+
 	minWeek: Date;
 	maxWeek: Date;
 
 	chunkSize?: number;
 
-	renderWeek: (weekStart: Date) => ReactNode;
+	renderWeek: (weekStart: Date, index: number) => ReactNode;
+
+	stickyHeader?: (firstVisibleDate: Date) => ReactNode;
 };
 
-export default function InfiniteWeekScrollMobile({ initialWeek, minWeek, maxWeek, chunkSize = 3, renderWeek }: InfiniteWeekScrollMobileProps) {
-	if (!isValid(initialWeek) || !isValid(minWeek) || !isValid(maxWeek)) {
+export default function InfiniteWeekScrollMobile({
+	initialWeek,
+	initialDate = new Date(),
+	minWeek,
+	maxWeek,
+	chunkSize = 3,
+	renderWeek,
+	stickyHeader,
+}: InfiniteWeekScrollMobileProps) {
+	if (!isValid(initialWeek) || !isValid(initialDate) || !isValid(minWeek) || !isValid(maxWeek)) {
 		console.error("Invalid InfiniteWeekScrollMobile dates:", {
 			initialWeek,
+			initialDate,
 			minWeek,
 			maxWeek,
 		});
@@ -30,12 +43,16 @@ export default function InfiniteWeekScrollMobile({ initialWeek, minWeek, maxWeek
 	const topSentinelRef = useRef<HTMLDivElement>(null);
 	const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
-	const initialWeekRef = useRef<HTMLDivElement>(null);
-
 	const loadingPreviousRef = useRef(false);
 	const loadingNextRef = useRef(false);
 
 	const previousScrollHeightRef = useRef<number | null>(null);
+	const initializedRef = useRef(false);
+
+	const [canScrollUp, setCanScrollUp] = useState(false);
+	const [canScrollDown, setCanScrollDown] = useState(true);
+
+	const [firstVisibleDate, setFirstVisibleDate] = useState(initialDate);
 
 	const [weeks, setWeeks] = useState<Date[]>(() => {
 		const result: Date[] = [];
@@ -53,17 +70,90 @@ export default function InfiniteWeekScrollMobile({ initialWeek, minWeek, maxWeek
 	});
 
 	/* ========================================================================= */
+	//                        scroll indicators
+	/* ========================================================================= */
+
+	const updateScrollIndicators = useCallback(() => {
+		const container = containerRef.current;
+
+		if (!container) return;
+
+		const scrollTop = container.scrollTop;
+		const maxScrollTop = container.scrollHeight - container.clientHeight;
+
+		setCanScrollUp(scrollTop > 2);
+		setCanScrollDown(scrollTop < maxScrollTop - 2);
+	}, []);
+
+	/* ========================================================================= */
+	//                        first visible date
+	/* ========================================================================= */
+
+	const updateFirstVisibleDate = useCallback(() => {
+		const container = containerRef.current;
+
+		if (!container) return;
+
+		const containerTop = container.getBoundingClientRect().top;
+
+		const dayElements = container.querySelectorAll<HTMLElement>("[data-calendar-day]");
+
+		for (const element of dayElements) {
+			const rect = element.getBoundingClientRect();
+
+			/*
+			 * First day whose bottom edge is still inside the viewport.
+			 */
+			if (rect.bottom > containerTop) {
+				const timestamp = Number(element.dataset.calendarDay);
+
+				if (Number.isNaN(timestamp)) return;
+
+				const date = new Date(timestamp);
+
+				setFirstVisibleDate((current) => (current.getTime() === date.getTime() ? current : date));
+
+				return;
+			}
+		}
+	}, []);
+
+	/* ========================================================================= */
+	//                        scroll
+	/* ========================================================================= */
+
+	const handleScroll = useCallback(() => {
+		updateScrollIndicators();
+		updateFirstVisibleDate();
+	}, [updateScrollIndicators, updateFirstVisibleDate]);
+
+	/* ========================================================================= */
 	//                        initial position
 	/* ========================================================================= */
 
 	useLayoutEffect(() => {
 		const container = containerRef.current;
-		const initialElement = initialWeekRef.current;
 
-		if (!container || !initialElement) return;
+		if (!container || initializedRef.current) return;
 
-		container.scrollTop = initialElement.offsetTop;
-	}, []);
+		const targetTimestamp = startOfDayTimestamp(initialDate);
+
+		const targetElement = container.querySelector<HTMLElement>(`[data-calendar-day="${targetTimestamp}"]`);
+
+		if (!targetElement) return;
+
+		/*
+		 * Put the requested initial date at the top of the scroll viewport.
+		 */
+		container.scrollTop = targetElement.offsetTop;
+
+		initializedRef.current = true;
+
+		requestAnimationFrame(() => {
+			updateScrollIndicators();
+			updateFirstVisibleDate();
+		});
+	}, [initialDate, weeks, updateScrollIndicators, updateFirstVisibleDate]);
 
 	/* ========================================================================= */
 	//                        preserve scroll
@@ -74,6 +164,11 @@ export default function InfiniteWeekScrollMobile({ initialWeek, minWeek, maxWeek
 		const previousScrollHeight = previousScrollHeightRef.current;
 
 		if (!container || previousScrollHeight === null) {
+			requestAnimationFrame(() => {
+				updateScrollIndicators();
+				updateFirstVisibleDate();
+			});
+
 			return;
 		}
 
@@ -83,7 +178,12 @@ export default function InfiniteWeekScrollMobile({ initialWeek, minWeek, maxWeek
 
 		previousScrollHeightRef.current = null;
 		loadingPreviousRef.current = false;
-	}, [weeks]);
+
+		requestAnimationFrame(() => {
+			updateScrollIndicators();
+			updateFirstVisibleDate();
+		});
+	}, [weeks, updateScrollIndicators, updateFirstVisibleDate]);
 
 	/* ========================================================================= */
 	//                        previous
@@ -195,30 +295,82 @@ export default function InfiniteWeekScrollMobile({ initialWeek, minWeek, maxWeek
 	/* ========================================================================= */
 
 	return (
-		<div
-			ref={containerRef}
-			className="
-				scrollbar-hidden
-				h-full overflow-y-auto
-				overscroll-contain
-				[overflow-anchor:none]
-			"
-		>
-			<div ref={topSentinelRef} className="h-px" />
+		<div className="flex h-full min-h-0 flex-col">
+			{/* Month header */}
+			{stickyHeader && <div className="shrink-0 px-3 pt-3">{stickyHeader(firstVisibleDate)}</div>}
 
-			<div className="flex flex-col px-3 py-3">
-				{weeks.map((week) => {
-					const isInitial = week.getTime() === normalizedInitialWeek.getTime();
+			{/* Scroll section */}
+			<div className="relative min-h-0 flex-1 overflow-hidden">
+				{/* Scroll area */}
+				<div
+					ref={containerRef}
+					onScroll={handleScroll}
+					className="
+					scrollbar-hidden
+					h-full overflow-y-auto
+					overscroll-contain
+					[overflow-anchor:none]
+				"
+				>
+					<div ref={topSentinelRef} className="h-px" />
 
-					return (
-						<div key={week.toISOString()} ref={isInitial ? initialWeekRef : undefined}>
-							{renderWeek(week)}
+					<div className="flex flex-col px-3 py-3">
+						{weeks.map((week, index) => (
+							<div key={week.toISOString()}>{renderWeek(week, index)}</div>
+						))}
+					</div>
+
+					<div ref={bottomSentinelRef} className="h-px" />
+				</div>
+
+				{/* Top fade */}
+				{canScrollUp && (
+					<div
+						className="
+						pointer-events-none
+						absolute inset-x-0 top-0 z-20
+						h-10
+						bg-linear-to-b
+						from-brand-page/90
+						to-transparent
+					"
+					>
+						<div className="flex justify-center pt-1">
+							<span className="text-xs font-bold text-brand-muted/60">⌃</span>
 						</div>
-					);
-				})}
-			</div>
+					</div>
+				)}
 
-			<div ref={bottomSentinelRef} className="h-px" />
+				{/* Bottom fade */}
+				{canScrollDown && (
+					<div
+						className="
+						pointer-events-none
+						absolute inset-x-0 bottom-0 z-20
+						h-10
+						bg-linear-to-t
+						from-brand-page/90
+						to-transparent
+					"
+					>
+						<div className="flex h-full items-end justify-center pb-1">
+							<span className="text-xs font-bold text-brand-muted/60">⌄</span>
+						</div>
+					</div>
+				)}
+			</div>
 		</div>
 	);
+}
+
+/* ========================================================================= */
+//                        helpers
+/* ========================================================================= */
+
+function startOfDayTimestamp(date: Date) {
+	const copy = new Date(date);
+
+	copy.setHours(0, 0, 0, 0);
+
+	return copy.getTime();
 }
