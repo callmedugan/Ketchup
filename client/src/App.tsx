@@ -1,5 +1,6 @@
 import ErrorBoundary from "./components/routing/ErrorBoundary";
 import { ProtectedRoute } from "./components/routing/ProtectedRoute";
+import AppShell from "./components/layout/AppShell";
 import AppProviders from "./contexts/AppProviders";
 import { CalendarPage } from "./pages/CalendarPage";
 import { FriendsPage } from "./pages/FriendsPage";
@@ -21,11 +22,13 @@ export default function App() {
 
 						{/* Protected Routes Wrapper */}
 						<Route element={<ProtectedRoute />}>
-							<Route path="/" element={<Navigate to="/calendar" replace />} />
-							<Route path="/calendar" element={<CalendarPage />} />
-							<Route path="/friends" element={<FriendsPage />} />
-							<Route path="/profile" element={<ProfilePage />} />
-							<Route path="/plans" element={<PlansPage />} />
+							<Route element={<AppShell />}>
+								<Route path="/" element={<Navigate to="/calendar" replace />} />
+								<Route path="/calendar" element={<CalendarPage />} />
+								<Route path="/friends" element={<FriendsPage />} />
+								<Route path="/profile" element={<ProfilePage />} />
+								<Route path="/plans" element={<PlansPage />} />
+							</Route>
 						</Route>
 					</Routes>
 				</BrowserRouter>

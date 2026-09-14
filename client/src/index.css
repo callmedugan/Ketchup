@@ -1,38 +1,78 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 @theme {
 	/* ================================================================ */
-	/* Brand */
+	/* Fonts */
 	/* ================================================================ */
 
-	--color-brand-red: #943b32;
-	--color-brand-red-dark: #7f2f29;
-	--color-brand-red-light: #c77b70;
-
-	--color-brand-text: #463b33;
-	--color-brand-muted: #786d65;
+	--font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+	--font-display: "Fraunces", ui-serif, Georgia, serif;
 
 	/* ================================================================ */
-	/* Surfaces */
+	/* Overlap-first brand palette                                       */
+	/* "you" (ketchup) and "friend" (mustard) are the app's two core     */
+	/* identity colors - where they conceptually overlap is "overlap".   */
 	/* ================================================================ */
 
-	--color-brand-page: #f7f1e5;
-	--color-brand-surface: #faf7f0;
-	--color-brand-card: #fffdf9;
+	--color-brand-red: #c1401f;
+	--color-brand-red-dark: #9a3016;
+	--color-brand-red-light: #f1907a;
+	--color-brand-red-tint: #fbddd2;
+
+	--color-brand-mustard: #d99a1f;
+	--color-brand-mustard-dark: #ad7a12;
+	--color-brand-mustard-light: #f0cc7c;
+	--color-brand-mustard-tint: #fbe8be;
+
+	--color-brand-overlap: #d9631f;
+	--color-brand-overlap-dark: #ad4c15;
+	--color-brand-overlap-tint: #f9ddc4;
 
 	/* ================================================================ */
-	/* Accent / decorative */
+	/* Neutrals (warm-toned, not pure gray)                              */
 	/* ================================================================ */
 
-	--color-brand-cream: #fff3d6;
-	--color-brand-pink: #f3d6d1;
-	--color-brand-pink-light: #fff7f2;
+	--color-ink: #2a211c;
+	--color-ink-muted: #6f5f52;
+	--color-ink-faint: #a8988a;
+
+	--color-paper: #fbf6ef;
+	--color-surface: #ffffff;
+	--color-surface-sunken: #f1e9dc;
+	--color-border: #e6dcc8;
 
 	/* ================================================================ */
-	/* Corkboard */
+	/* Semantic                                                          */
 	/* ================================================================ */
 
+	--color-success: #2f9e5c;
+	--color-success-tint: #ddf0e3;
+	--color-danger: #dc2626;
+	--color-danger-tint: #fbe2e1;
+
+	/* ================================================================ */
+	/* Legacy aliases - existing components still reference these names. */
+	/* Mapped onto the palette above so they inherit the refreshed look  */
+	/* without edits; removed as each surface is migrated onto the      */
+	/* tokens/components above.                                         */
+	/* ================================================================ */
+
+	--color-brand-text: var(--color-ink);
+	--color-brand-muted: var(--color-ink-muted);
+	--color-brand-page: var(--color-paper);
+	--color-brand-surface: var(--color-surface-sunken);
+	--color-brand-card: var(--color-surface);
+	--color-brand-cream: #fbefd6;
+	--color-brand-pink: var(--color-brand-red-tint);
+	--color-brand-pink-light: #fdf0ea;
 	--color-brand-cork: #b8794f;
+}
+
+body {
+	font-family: var(--font-sans);
+	color: var(--color-ink);
+	background-color: var(--color-paper);
 }
 
 @utility card {
@@ -136,4 +176,18 @@
 
 .animate-float-notification {
 	animation: float-notification 2.5s ease-in-out infinite;
+}
+
+@keyframes overlap-drift {
+	0%,
+	100% {
+		transform: translateX(-3px);
+	}
+	50% {
+		transform: translateX(3px);
+	}
+}
+
+.animate-overlap-drift {
+	animation: overlap-drift 1.4s ease-in-out infinite;
 }

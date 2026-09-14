@@ -1,7 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
 import NewPlanModal from "../components/plans/NewPlansModal";
-import PageContainer from "./PageContainer";
 import PlansSplitView from "../components/plans/PlansSplitView";
 import type { ScheduleInstance } from "../components/calendar/Instance";
 
@@ -23,12 +22,12 @@ export function PlansPage() {
 	const [showNewPlanModal, setShowNewPlanModal] = useState(newPlanOverlap !== undefined && userScheduleId !== undefined);
 
 	return (
-		<PageContainer>
+		<>
 			<PlansSplitView />
 
 			{showNewPlanModal && newPlanOverlap && userScheduleId && (
 				<NewPlanModal overlap={newPlanOverlap} userScheduleId={userScheduleId} onClose={() => setShowNewPlanModal(false)} />
 			)}
-		</PageContainer>
+		</>
 	);
 }
