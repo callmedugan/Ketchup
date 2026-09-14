@@ -28,21 +28,24 @@ type AvatarStackProps = {
 	max?: number;
 	variant?: "tiny" | "small";
 	className?: string;
+	/** overrides the default neutral ring, e.g. to reflect a plan's status */
+	ringClassName?: string;
+	title?: string;
 };
 
 /** A row of overlapping avatars - the "who's free with you" indicator, a direct instance of the app's overlap motif. */
-export function AvatarStack({ people, max = 3, variant = "tiny", className = "" }: AvatarStackProps) {
+export function AvatarStack({ people, max = 3, variant = "tiny", className = "", ringClassName = "ring-surface", title }: AvatarStackProps) {
 	const visible = people.slice(0, max);
 	const overflow = people.length - visible.length;
 
 	return (
-		<div className={`flex shrink-0 -space-x-1.5 ${className}`} title={people.map((person) => person.name).join(", ")}>
+		<div className={`flex shrink-0 -space-x-1.5 ${className}`} title={title ?? people.map((person) => person.name).join(", ")}>
 			{visible.map((person) => (
-				<Avatar key={person.id} name={person.name} rawUrl={person.avatarUrl} variant={variant} className="ring-2 ring-surface" />
+				<Avatar key={person.id} name={person.name} rawUrl={person.avatarUrl} variant={variant} className={`ring-2 ${ringClassName}`} />
 			))}
 
 			{overflow > 0 && (
-				<span className="flex h-4 w-4 items-center justify-center rounded-full bg-surface-sunken text-[7px] font-bold text-ink ring-2 ring-surface">
+				<span className={`flex h-4 w-4 items-center justify-center rounded-full bg-surface-sunken text-[7px] font-bold text-ink ring-2 ${ringClassName}`}>
 					+{overflow}
 				</span>
 			)}
