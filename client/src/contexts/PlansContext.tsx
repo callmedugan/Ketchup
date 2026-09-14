@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useAuth } from "./AuthContext";
 import { getPlansFromParsedJson, type Plan, type PlanData } from "../utils/types";
 import { useFriends } from "./FriendsContext";
+import { useSchedule } from "./SchedulesContext";
 import type { BadgeTone } from "../components/ui/Badge";
 
 /* ========================================================================= */
@@ -40,6 +41,9 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 	const { user, authFetch } = useAuth();
 	//needs to be nested inside friends provider
 	const { friends } = useFriends();
+	//needs to be nested inside schedule provider - a plan's status changing (created, accepted/declined,
+	//cancelled) also changes which schedules the calendar should show as committed to a plan
+	const { fetchScheduleData } = useSchedule();
 
 	const [plansData, setPlansData] = useState<PlanData[]>([]);
 	const [isLoadingPlans, setIsLoadingPlans] = useState(false);
@@ -95,6 +99,13 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 		return planData;
 	}
 
+	// a plan's status changing also changes which schedules should show as committed on the
+	// calendar - refresh both together so the calendar never shows stale plan info
+	async function refetchAfterPlanChange(): Promise<PlanData[]> {
+		const [planData] = await Promise.all([fetchPlans(), fetchScheduleData().catch(() => {})]);
+		return planData;
+	}
+
 	async function addPlan(
 		friendId: string,
 		title: string,
@@ -120,7 +131,7 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 			throw new Error(data.error);
 		}
 
-		return fetchPlans();
+		return refetchAfterPlanChange();
 	}
 
 	async function cancelPlan(id: string): Promise<PlanData[]> {
@@ -131,7 +142,7 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 			throw new Error(data.error);
 		}
 
-		return fetchPlans();
+		return refetchAfterPlanChange();
 	}
 
 	async function updatePlanStatus(id: string, response: "accepted" | "declined"): Promise<PlanData[]> {
@@ -142,7 +153,7 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 			throw new Error(data.error);
 		}
 
-		return fetchPlans();
+		return refetchAfterPlanChange();
 	}
 
 	//#endregion

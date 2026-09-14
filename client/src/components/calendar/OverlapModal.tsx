@@ -28,6 +28,9 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 	const navigate = useNavigate();
 
 	const hasPassed = instance.end <= new Date();
+	// a schedule can only ever be committed to one active plan at a time (enforced server-side too) -
+	// once it has one, every overlap on this instance is blocked from starting another
+	const hasExistingPlan = !!instance.plan;
 
 	const overlaps = [...instance.overlaps].sort((a, b) => differenceInMinutes(b.end, b.start) - differenceInMinutes(a.end, a.start));
 
@@ -134,7 +137,7 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 
 				<button
 					type="button"
-					disabled={hasPassed}
+					disabled={hasPassed || hasExistingPlan}
 					onClick={() => {
 						navigate("/plans", {
 							state: {
@@ -146,13 +149,13 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 					className={`
 						mt-2.5 w-full
 						${
-							hasPassed
+							hasPassed || hasExistingPlan
 								? "cursor-not-allowed rounded-xl bg-surface-sunken px-3 py-2 text-xs font-bold text-ink-muted/70 sm:px-4 sm:py-2.5 sm:text-sm"
 								: "btn-primary"
 						}
 					`}
 				>
-					{hasPassed ? "Expired" : "Make plans"}
+					{hasPassed ? "Expired" : hasExistingPlan ? "Already planned" : "Make plans"}
 				</button>
 			</div>
 		);
