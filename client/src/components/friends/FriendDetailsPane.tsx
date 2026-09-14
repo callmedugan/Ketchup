@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useFriends } from "../../contexts/FriendsContext";
-import Avatar from "../common/Avatar";
+import Avatar from "../ui/Avatar";
+import Badge from "../ui/Badge";
+import Button from "../ui/Button";
 import ScrollableContainer from "../common/ScrollableContainer";
-import HoldButton from "../common/HoldButton";
+import HoldButton from "../ui/HoldButton";
 import type { SelectedFriendUser } from "./FriendsSplitView";
 
 type FriendDetailsPaneProps = { activeUser: SelectedFriendUser | null };
@@ -14,7 +16,7 @@ export default function FriendDetailsPane({ activeUser }: FriendDetailsPaneProps
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	if (!activeUser) {
-		return <div className="relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-stone-200 bg-[#fffdf8] shadow-sm">{showEmptyState()}</div>;
+		return <div className="relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">{showEmptyState()}</div>;
 	}
 
 	const user = activeUser.data;
@@ -78,36 +80,40 @@ export default function FriendDetailsPane({ activeUser }: FriendDetailsPaneProps
 	function showHeader() {
 		return (
 			<div className="shrink-0 border-b border-brand-red-dark bg-brand-red px-6 py-3">
-				<p className="text-sm font-bold uppercase tracking-wide text-brand-cream">Profile</p>
+				<p className="text-sm font-bold uppercase tracking-wide text-white">Profile</p>
 			</div>
 		);
 	}
 
 	function showProfile() {
 		return (
-			<section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+			<section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
 				<div className="p-5">
 					<div className="flex items-start gap-4">
 						<Avatar name={user.name} rawUrl={user.avatarUrl} variant="large" />
 
 						<div className="min-w-0 flex-1">
-							<h2 className="truncate text-xl font-bold text-brand-text">{user.name}</h2>
+							<h2 className="truncate text-xl font-bold text-ink">{user.name}</h2>
 
-							{friend && <span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${status?.className}`}>{status?.text}</span>}
+							{friend && status && (
+								<Badge tone={status.tone} className="mt-1">
+									{status.text}
+								</Badge>
+							)}
 						</div>
 					</div>
 
-					<div className="mt-5 space-y-4 border-t border-stone-200 pt-4">
+					<div className="mt-5 space-y-4 border-t border-border pt-4">
 						{user.bio && (
 							<div className="flex items-baseline gap-5">
 								<p className="friend-info-label">About</p>
-								<p className="min-w-0 flex-1 whitespace-pre-wrap text-sm leading-relaxed text-brand-text">{user.bio}</p>
+								<p className="min-w-0 flex-1 whitespace-pre-wrap text-sm leading-relaxed text-ink">{user.bio}</p>
 							</div>
 						)}
 						{user.timezone && (
 							<div className="flex items-baseline gap-5">
 								<p className="friend-info-label">Timezone</p>
-								<p className="text-sm font-bold text-brand-text">{user.timezone}</p>
+								<p className="text-sm font-bold text-ink">{user.timezone}</p>
 							</div>
 						)}
 					</div>
@@ -119,7 +125,7 @@ export default function FriendDetailsPane({ activeUser }: FriendDetailsPaneProps
 	function showError() {
 		if (!error) return null;
 
-		return <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</p>;
+		return <p className="rounded-xl border border-danger/20 bg-danger-tint px-4 py-3 text-sm font-medium text-danger">{error}</p>;
 	}
 
 	function showActions() {
@@ -127,9 +133,9 @@ export default function FriendDetailsPane({ activeUser }: FriendDetailsPaneProps
 
 		if (!friend) {
 			primaryActions = (
-				<button type="button" onClick={handleAddFriend} disabled={isSubmitting} className="btn-primary">
+				<Button onClick={handleAddFriend} disabled={isSubmitting}>
 					{isSubmitting ? "Sending..." : "Send friend request"}
-				</button>
+				</Button>
 			);
 		} else if (friend.status === "requested" && friend.requestDirection === "received") {
 			primaryActions = (
@@ -138,9 +144,9 @@ export default function FriendDetailsPane({ activeUser }: FriendDetailsPaneProps
 						Decline
 					</HoldButton>
 
-					<button type="button" onClick={handleAccept} disabled={isSubmitting} className="btn-primary">
+					<Button onClick={handleAccept} disabled={isSubmitting}>
 						{isSubmitting ? "Accepting..." : "Accept request"}
-					</button>
+					</Button>
 				</>
 			);
 		} else if (friend.status === "requested" && friend.requestDirection === "sent") {
@@ -162,9 +168,9 @@ export default function FriendDetailsPane({ activeUser }: FriendDetailsPaneProps
 		if (isBlockedByUser) {
 			return (
 				<div className="flex justify-end">
-					<button type="button" onClick={handleUnblock} disabled={isSubmitting} className="btn-secondary">
+					<Button variant="secondary" onClick={handleUnblock} disabled={isSubmitting}>
 						Unblock
-					</button>
+					</Button>
 				</div>
 			);
 		}
@@ -181,7 +187,7 @@ export default function FriendDetailsPane({ activeUser }: FriendDetailsPaneProps
 	}
 
 	return (
-		<div className="relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-stone-200 bg-[#fffdf8] shadow-sm">
+		<div className="relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
 			{showHeader()}
 
 			<ScrollableContainer className="p-5 sm:p-6">
@@ -199,9 +205,9 @@ function showEmptyState() {
 	return (
 		<div className="flex h-full min-h-100 items-center justify-center p-8">
 			<div className="max-w-sm text-center">
-				<h2 className="text-lg font-bold text-brand-text">Select a person</h2>
+				<h2 className="text-lg font-bold text-ink">Select a person</h2>
 
-				<p className="mt-1 text-sm font-medium text-brand-muted">Choose someone from the list to view their profile.</p>
+				<p className="mt-1 text-sm font-medium text-ink-muted">Choose someone from the list to view their profile.</p>
 			</div>
 		</div>
 	);

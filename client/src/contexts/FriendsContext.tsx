@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 import { useAuth } from "./AuthContext";
 import { getFriendsFromParsedJson, getUserSearchResultsFromParsedJson, type Friend, type UserSearchResult } from "../utils/types";
+import type { BadgeTone } from "../components/ui/Badge";
 
 /* ========================================================================= */
 // context
@@ -28,7 +29,7 @@ type FriendsContextType = {
 	blockFriend: (friendId: string) => Promise<Friend[]>;
 	unblockFriend: (friendId: string) => Promise<Friend[]>;
 
-	getStatusDisplay: (friend: Friend) => { text: string; className: string };
+	getStatusDisplay: (friend: Friend) => { text: string; tone: BadgeTone };
 };
 
 const FriendsContext = createContext<FriendsContextType | null>(null);
@@ -175,23 +176,23 @@ export const FriendsProvider = ({ children }: FriendsProviderProps) => {
 		return friends.find((friend) => friend.id === id);
 	}
 
-	function getStatusDisplay(friend: Friend) {
+	function getStatusDisplay(friend: Friend): { text: string; tone: BadgeTone } {
 		switch (friend.status) {
 			case "accepted":
-				return { text: "Friends", className: "bg-emerald-100 text-emerald-700" };
+				return { text: "Friends", tone: "success" };
 
 			case "requested":
 				if (friend.requestDirection === "received") {
-					return { text: "New request", className: "bg-blue-100 text-blue-700" };
+					return { text: "New request", tone: "warning" };
 				}
 
-				return { text: "Request sent", className: "bg-amber-100 text-amber-700" };
+				return { text: "Request sent", tone: "neutral" };
 
 			case "declined":
-				return { text: "Declined", className: "bg-stone-200 text-brand-text" };
+				return { text: "Declined", tone: "neutral" };
 
 			case "blocked":
-				return { text: "Blocked", className: "bg-red-100 text-red-700" };
+				return { text: "Blocked", tone: "danger" };
 		}
 	}
 

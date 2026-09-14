@@ -2,7 +2,10 @@ import { useState } from "react";
 import type { Friend, UserSearchResult } from "../../utils/types";
 import { useFriends } from "../../contexts/FriendsContext";
 import type { SelectedFriendUser } from "./FriendsSplitView";
-import Avatar from "../common/Avatar";
+import Avatar from "../ui/Avatar";
+import Badge from "../ui/Badge";
+import EmptyState from "../ui/EmptyState";
+import LoadingSpinner from "../ui/LoadingSpinner";
 import ScrollableContainer from "../common/ScrollableContainer";
 import UserSearchBar from "./UserSearchBar";
 
@@ -39,14 +42,14 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 
 	function showFilterTabs() {
 		return (
-			<div className="grid shrink-0 grid-cols-3 border-b border-stone-200 bg-brand-card">
+			<div className="grid shrink-0 grid-cols-3 border-b border-border bg-surface">
 				<button
 					type="button"
 					onClick={() => handleTabChange("friends")}
 					className={`
-					border-r border-stone-200 px-4 py-3
+					border-r border-border px-4 py-3
 					text-sm font-bold transition
-					${listMode === "friends" ? "bg-brand-red text-brand-cream" : "text-brand-muted hover:bg-[#f3e9df] hover:text-brand-text"}
+					${listMode === "friends" ? "bg-brand-red text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
 				`}
 				>
 					Friends
@@ -56,9 +59,9 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 					type="button"
 					onClick={() => handleTabChange("requests")}
 					className={`
-					border-r border-stone-200 px-4 py-3
+					border-r border-border px-4 py-3
 					text-sm font-bold transition
-					${listMode === "requests" ? "bg-brand-red text-brand-cream" : "text-brand-muted hover:bg-[#f3e9df] hover:text-brand-text"}
+					${listMode === "requests" ? "bg-brand-red text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
 				`}
 				>
 					Requests
@@ -71,7 +74,7 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 					className={`
 					flex items-center justify-center px-4 py-3
 					transition
-					${listMode === "search" ? "bg-brand-red text-brand-cream" : "text-brand-muted hover:bg-[#f3e9df] hover:text-brand-text"}
+					${listMode === "search" ? "bg-brand-red text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
 				`}
 				>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -104,14 +107,12 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 
 					<div className="min-w-0">
 						<div className="flex items-center gap-2">
-							<h3 className="truncate font-bold text-brand-text">{friend.name}</h3>
+							<h3 className="truncate font-bold text-ink">{friend.name}</h3>
 
-							{friend.status !== "accepted" && (
-								<span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${status?.className}`}>{status?.text}</span>
-							)}
+							{friend.status !== "accepted" && <Badge tone={status.tone}>{status.text}</Badge>}
 						</div>
 
-						{friend.bio && <p className="mt-0.5 truncate text-xs font-medium text-brand-muted">{friend.bio}</p>}
+						{friend.bio && <p className="mt-0.5 truncate text-xs font-medium text-ink-muted">{friend.bio}</p>}
 					</div>
 				</div>
 
@@ -166,9 +167,9 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 					<Avatar name={user.name} rawUrl={user.avatarUrl} />
 
 					<div className="min-w-0 text-left">
-						<h3 className="truncate font-bold text-brand-text">{user.name}</h3>
+						<h3 className="truncate font-bold text-ink">{user.name}</h3>
 
-						{relationshipText && <p className="mt-0.5 text-xs font-medium text-brand-muted">{relationshipText}</p>}
+						{relationshipText && <p className="mt-0.5 text-xs font-medium text-ink-muted">{relationshipText}</p>}
 					</div>
 				</div>
 
@@ -217,7 +218,7 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 				strokeLinejoin="round"
 				className={`
 					ml-3 h-5 w-5 shrink-0 transition
-					${isSelected ? "translate-x-0.5 text-brand-red" : "text-brand-muted/40 group-hover:translate-x-0.5 group-hover:text-brand-muted"}
+					${isSelected ? "translate-x-0.5 text-brand-red" : "text-ink-muted/40 group-hover:translate-x-0.5 group-hover:text-ink-muted"}
 				`}
 			>
 				<path d="M7 4l6 6-6 6" />
@@ -227,30 +228,27 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 
 	function showEmptyState() {
 		return (
-			<div className="rounded-xl border border-dashed border-stone-300 bg-brand-card px-5 py-10 text-center">
-				<h3 className="font-bold text-brand-text">{listMode === "friends" ? "No friends yet" : "No requests"}</h3>
-
-				<p className="mx-auto mt-1 max-w-sm text-sm font-medium text-brand-muted">
-					{listMode === "friends" ? "Search for someone to add as a friend." : "Incoming friend requests will show up here."}
-				</p>
-			</div>
+			<EmptyState
+				title={listMode === "friends" ? "No friends yet" : "No requests"}
+				description={listMode === "friends" ? "Search for someone to add as a friend." : "Incoming friend requests will show up here."}
+			/>
 		);
 	}
 
 	function showSearchingState() {
 		return (
-			<div className="flex h-full flex-1 items-center justify-center">
-				<div className="h-15 w-15 animate-spin rounded-full border-2 border-brand-muted/30 border-t-brand-red" />
+			<div className="flex h-full flex-1 items-center justify-center py-8">
+				<LoadingSpinner size={28} />
 			</div>
 		);
 	}
 
 	function showSearchEmptyState() {
 		return (
-			<div className="flex flex-1 items-center justify-center p-5">
-				<div className="text-center">
-					<h3 className="font-bold text-brand-text">Find someone</h3>
-					<p className="mt-1 text-sm font-medium text-brand-muted">Search for another Ketchup user by name.</p>
+			<div className="flex flex-1 items-center justify-center p-5 text-center">
+				<div>
+					<h3 className="font-bold text-ink">Find someone</h3>
+					<p className="mt-1 text-sm font-medium text-ink-muted">Search for another Ketchup user by name.</p>
 				</div>
 			</div>
 		);
@@ -258,17 +256,17 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 
 	function showNoResultsState() {
 		return (
-			<div className="flex flex-1 items-center justify-center p-5">
-				<div className="text-center">
-					<h3 className="font-bold text-brand-text">No users found</h3>
-					<p className="mt-1 text-sm font-medium text-brand-muted">Try a different name.</p>
+			<div className="flex flex-1 items-center justify-center p-5 text-center">
+				<div>
+					<h3 className="font-bold text-ink">No users found</h3>
+					<p className="mt-1 text-sm font-medium text-ink-muted">Try a different name.</p>
 				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-stone-200 bg-brand-surface shadow-sm">
+		<div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface-sunken shadow-sm">
 			{showFilterTabs()}
 			{listMode === "search" && showSearch()}
 			{showContent()}
