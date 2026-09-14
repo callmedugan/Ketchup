@@ -6,6 +6,7 @@ import Avatar from "../ui/Avatar";
 import Badge from "../ui/Badge";
 import EmptyState from "../ui/EmptyState";
 import LoadingSpinner from "../ui/LoadingSpinner";
+import SegmentedControl from "../ui/SegmentedControl";
 import { usePlans } from "../../contexts/PlansContext";
 
 type PlansListPaneProps = {
@@ -14,53 +15,35 @@ type PlansListPaneProps = {
 	onClearError: () => void;
 };
 
+type StatusFilter = "all" | "pending" | "confirmed";
+
+const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+	{ value: "all", label: "All" },
+	{ value: "pending", label: "Pending" },
+	{ value: "confirmed", label: "Confirmed" },
+];
+
 export default function PlansListPane({ activePlan, onSelectPlan, onClearError }: PlansListPaneProps) {
 	const { plans, getPlanStatusDisplay, isLoadingPlans } = usePlans();
 
-	const [showActiveOnly, setShowActiveOnly] = useState(true);
+	const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
 	const now = new Date();
 
-	//filter depending on toggle and sort from first upcoming to later
+	//filter depending on selected status and sort from first upcoming to later
 	const visiblePlans = plans
-		.filter((plan) => {
-			const isPast = isBefore(plan.meetTime, now);
-			if (showActiveOnly) return !isPast && (plan.status === "pending" || plan.status === "confirmed");
-			return true;
-		})
+		.filter((plan) => statusFilter === "all" || plan.status === statusFilter)
 		.sort((a, b) => a.meetTime.getTime() - b.meetTime.getTime());
+
+	function handleFilterChange(next: StatusFilter) {
+		setStatusFilter(next);
+		onClearError();
+	}
 
 	function showFilterTabs() {
 		return (
-			<div className="grid shrink-0 grid-cols-2 border-b border-border bg-surface">
-				<button
-					type="button"
-					onClick={() => {
-						setShowActiveOnly(true);
-						onClearError();
-					}}
-					className={`
-						border-r border-border px-4 py-3
-						text-sm font-bold transition
-						${showActiveOnly ? "bg-brand-red text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
-					`}
-				>
-					Active
-				</button>
-
-				<button
-					type="button"
-					onClick={() => {
-						setShowActiveOnly(false);
-						onClearError();
-					}}
-					className={`
-						px-4 py-3 text-sm font-bold transition
-						${!showActiveOnly ? "bg-brand-red text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
-					`}
-				>
-					All
-				</button>
+			<div className="flex shrink-0 items-center border-b border-border bg-surface px-3 py-2.5">
+				<SegmentedControl options={STATUS_FILTER_OPTIONS} value={statusFilter} onChange={handleFilterChange} />
 			</div>
 		);
 	}
@@ -131,7 +114,7 @@ export default function PlansListPane({ activePlan, onSelectPlan, onClearError }
 				strokeLinejoin="round"
 				className={`
 					ml-3 h-5 w-5 shrink-0 transition
-					${isSelected ? "translate-x-0.5 text-brand-red" : "text-ink-muted/40 group-hover:translate-x-0.5 group-hover:text-ink-muted"}
+					${isSelected ? "translate-x-0.5 text-accent" : "text-ink-muted/40 group-hover:translate-x-0.5 group-hover:text-ink-muted"}
 				`}
 			>
 				<path d="M7 4l6 6-6 6" />
@@ -140,12 +123,13 @@ export default function PlansListPane({ activePlan, onSelectPlan, onClearError }
 	}
 
 	function showEmptyState() {
-		return (
-			<EmptyState
-				title={showActiveOnly ? "No active plans" : "No plans yet"}
-				description={showActiveOnly ? "You don't have any upcoming plans right now." : "Make some plans with a friend to get started!"}
-			/>
-		);
+		const copy: Record<StatusFilter, { title: string; description: string }> = {
+			all: { title: "No plans yet", description: "Make some plans with a friend to get started!" },
+			pending: { title: "No pending plans", description: "Plans awaiting a response will show up here." },
+			confirmed: { title: "No confirmed plans", description: "Accepted plans will show up here." },
+		};
+
+		return <EmptyState title={copy[statusFilter].title} description={copy[statusFilter].description} />;
 	}
 
 	return (

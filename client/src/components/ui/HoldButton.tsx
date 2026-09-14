@@ -12,7 +12,7 @@ type HoldButtonProps = {
 };
 
 const variantStyles: Record<HoldButtonVariant, { button: string; fill: string }> = {
-	primary: { button: "bg-brand-red text-white shadow-sm hover:bg-brand-red-dark", fill: "bg-brand-red-dark" },
+	primary: { button: "bg-accent text-white shadow-sm hover:bg-accent-dark", fill: "bg-accent-dark" },
 	secondary: { button: "border border-border bg-surface text-ink hover:bg-surface-sunken", fill: "bg-surface-sunken" },
 	danger: { button: "border border-danger text-danger hover:bg-danger-tint", fill: "bg-danger-tint" },
 };
@@ -83,7 +83,7 @@ export default function HoldButton({ children, onComplete, disabled = false, hol
 			onKeyDown={handleKeyDown}
 			onKeyUp={handleKeyUp}
 			disabled={disabled}
-			className={`relative inline-flex shrink-0 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-sm font-bold transition select-none active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${styles.button} ${className}`}
+			className={`relative inline-flex shrink-0 items-center justify-center gap-2 overflow-hidden rounded-lg px-4 py-2.5 text-sm font-bold transition select-none active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${styles.button} ${className}`}
 		>
 			<div className={`pointer-events-none absolute inset-y-0 left-0 ${styles.fill}`} style={{ width: `${progress * 100}%` }} />
 			<span className="relative z-10">{children}</span>

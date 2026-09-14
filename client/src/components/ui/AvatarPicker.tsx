@@ -21,7 +21,7 @@ export default function AvatarPicker({ value, onChange, className = "" }: Avatar
 						aria-pressed={isSelected}
 						title={avatar}
 						className={`aspect-square overflow-hidden rounded-full border-2 transition ${
-							isSelected ? "border-brand-red ring-2 ring-brand-red/25" : "border-transparent hover:border-border"
+							isSelected ? "border-accent ring-2 ring-accent/25" : "border-transparent hover:border-border"
 						}`}
 					>
 						<img src={`/avatars/${avatar}.webp`} alt={avatar} className="h-full w-full object-cover" />

@@ -380,12 +380,12 @@ export default function InfiniteWeekScroll({
 						absolute inset-x-0 top-0 z-20
 						h-8
 						bg-linear-to-b
-						from-brand-page/80
+						from-canvas/80
 						to-transparent
 					"
 				>
 					<div className="flex justify-center pt-1">
-						<span className="text-xs font-bold text-brand-muted/60">⌃</span>
+						<span className="text-xs font-bold text-ink-muted/60">⌃</span>
 					</div>
 				</div>
 			)}
@@ -398,12 +398,12 @@ export default function InfiniteWeekScroll({
 						absolute inset-x-0 bottom-0 z-20
 						h-8
 						bg-linear-to-t
-						from-brand-page/80
+						from-canvas/80
 						to-transparent
 					"
 				>
 					<div className="flex h-full items-end justify-center pb-1">
-						<span className="text-xs font-bold text-brand-muted/60">⌄</span>
+						<span className="text-xs font-bold text-ink-muted/60">⌄</span>
 					</div>
 				</div>
 			)}
@@ -411,7 +411,7 @@ export default function InfiniteWeekScroll({
 			{/* Loading previous */}
 			{isLoadingPrevious && (
 				<div className="pointer-events-none absolute left-1/2 top-2 z-30 -translate-x-1/2">
-					<div className="rounded-full border border-stone-200 bg-brand-card/95 px-3 py-1 text-[10px] font-bold text-brand-muted shadow-sm">
+					<div className="rounded-full border border-border bg-surface/95 px-3 py-1 text-[10px] font-bold text-ink-muted shadow-sm">
 						Loading earlier weeks...
 					</div>
 				</div>
@@ -420,7 +420,7 @@ export default function InfiniteWeekScroll({
 			{/* Loading next */}
 			{isLoadingNext && (
 				<div className="pointer-events-none absolute bottom-2 left-1/2 z-30 -translate-x-1/2">
-					<div className="rounded-full border border-stone-200 bg-brand-card/95 px-3 py-1 text-[10px] font-bold text-brand-muted shadow-sm">
+					<div className="rounded-full border border-border bg-surface/95 px-3 py-1 text-[10px] font-bold text-ink-muted shadow-sm">
 						Loading later weeks...
 					</div>
 				</div>

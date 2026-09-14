@@ -25,7 +25,7 @@ export default function MobileCalendar({ initialWeek, minWeek, maxWeek, getSched
 	/* ========================================================================= */
 
 	return (
-		<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-paper">
+		<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-canvas">
 			<InfiniteWeekScrollMobile
 				initialWeek={initialWeek}
 				initialDate={new Date()}
@@ -33,8 +33,8 @@ export default function MobileCalendar({ initialWeek, minWeek, maxWeek, getSched
 				maxWeek={maxWeek}
 				renderWeek={showWeek}
 				stickyHeader={(firstVisibleDate) => (
-					<div className="rounded-xl border border-brand-red-dark/40 bg-brand-red px-4 py-2.5 shadow-sm">
-						<p className="text-center font-display text-sm font-semibold text-white">{format(firstVisibleDate, "MMMM yyyy")}</p>
+					<div className="rounded-xl border border-border bg-surface px-4 py-2.5 shadow-sm">
+						<p className="text-center text-sm font-extrabold tracking-tight text-ink">{format(firstVisibleDate, "MMMM yyyy")}</p>
 					</div>
 				)}
 			/>
@@ -65,7 +65,7 @@ export default function MobileCalendar({ initialWeek, minWeek, maxWeek, getSched
 				</div>
 
 				{/* Week divider */}
-				<div className="mx-auto my-2 h-1 w-full rounded-full bg-brand-red/75" />
+				<div className="mx-auto my-2 h-1 w-full rounded-full bg-accent/75" />
 			</section>
 		);
 	}
@@ -88,17 +88,17 @@ export default function MobileCalendar({ initialWeek, minWeek, maxWeek, getSched
 		/* ========================================================================= */
 		//                        styles
 		/* ========================================================================= */
-		const headerBackground = isToday ? "bg-brand-red-tint" : isPast ? "bg-surface-sunken" : "bg-surface";
+		const headerBackground = isToday ? "bg-accent-tint" : isPast ? "bg-surface-sunken" : "bg-surface";
 		const cardBackground = isPast ? "bg-surface-sunken/60" : "bg-surface";
 
-		const borderColor = isToday ? "border-brand-red-dark" : isPast ? "border-border" : "border-border";
+		const borderColor = isToday ? "border-accent-dark" : isPast ? "border-border" : "border-border";
 
 		const headerBorder = isEmpty ? "border-b-0" : "border-b border-border";
 
 		const dayTextColor = isPast ? "text-ink-muted" : "text-ink";
-		const dateCircleStyle = isToday ? "bg-brand-red text-white" : isPast ? "bg-surface text-ink-muted" : "bg-surface text-brand-red-dark";
-		const addButtonStyle = "border-brand-red/35 bg-surface/50 text-brand-red-dark active:bg-surface";
-		const todayBadgeStyle = "bg-brand-mustard-tint text-brand-mustard-dark";
+		const dateCircleStyle = isToday ? "bg-accent text-white" : isPast ? "bg-surface text-ink-muted" : "bg-surface text-accent-dark";
+		const addButtonStyle = "border-accent/35 bg-surface/50 text-accent-dark active:bg-surface";
+		const todayBadgeStyle = "bg-accent-tint text-accent-dark";
 
 		const scheduleContainerStyle = "flex flex-col gap-2 p-3";
 		/* ========================================================================= */

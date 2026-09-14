@@ -133,7 +133,7 @@ export default function NewScheduleModal({ onClose, initialDate }: NewScheduleMo
 								type="button"
 								onClick={() => setRepeatType(option.value)}
 								className={`rounded-lg py-2 text-xs font-bold transition sm:text-sm ${
-									repeatType === option.value ? "bg-brand-red text-white shadow-sm" : "text-ink-muted hover:text-ink"
+									repeatType === option.value ? "bg-accent text-white shadow-sm" : "text-ink-muted hover:text-ink"
 								}`}
 							>
 								{option.label}
@@ -170,7 +170,7 @@ function PresetButton({ label, onClick }: PresetButtonProps) {
 		<button
 			type="button"
 			onClick={onClick}
-			className="rounded-xl border border-border bg-surface px-1.5 py-2 text-xs font-bold text-ink transition hover:border-brand-red hover:bg-brand-red-tint hover:text-brand-red-dark sm:px-3 sm:py-2.5 sm:text-sm"
+			className="rounded-lg border border-border bg-surface px-1.5 py-2 text-xs font-bold text-ink transition hover:border-accent hover:bg-accent-tint hover:text-accent-dark sm:px-3 sm:py-2.5 sm:text-sm"
 		>
 			{label}
 		</button>

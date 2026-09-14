@@ -46,7 +46,7 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
 								px-2 py-1.5 text-center
 								text-[10px] font-bold uppercase
 								tracking-[0.12em]
-								${isTodayColumn ? "bg-brand-red/10 text-brand-red" : "text-ink-muted"}
+								${isTodayColumn ? "bg-accent/10 text-accent" : "text-ink-muted"}
 							`}
 						>
 							{day}
@@ -75,8 +75,8 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
 		const firstSaturday = addDays(topWeek, 6);
 
 		return (
-			<div className="flex h-14 shrink-0 items-center justify-center border-b border-brand-red-dark bg-linear-to-r from-brand-red-dark via-brand-red to-brand-red-dark px-4">
-				<h2 className="font-display text-xl font-semibold tracking-tight text-white">{format(firstSaturday, "MMMM yyyy")}</h2>
+			<div className="flex h-14 shrink-0 items-center justify-center border-b border-border bg-surface px-4">
+				<h2 className="text-xl font-extrabold tracking-tight text-ink">{format(firstSaturday, "MMMM yyyy")}</h2>
 			</div>
 		);
 	}
@@ -108,7 +108,7 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
 
 		const canAddAvailability = !isPast && daySchedules.length < MAX_SCHEDULES_PER_DAY;
 
-		const background = isToday ? "bg-brand-red-tint/30" : isPast ? "bg-surface-sunken/70" : "bg-surface";
+		const background = isToday ? "bg-accent-tint/30" : isPast ? "bg-surface-sunken/70" : "bg-surface";
 
 		return (
 			<div
@@ -117,7 +117,7 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
                     group/day relative min-h-0 min-w-0 overflow-hidden
                     border-b border-r border-border last:border-r-0
                     ${background}
-                    ${isToday ? "ring-2 ring-inset ring-brand-red" : ""}
+                    ${isToday ? "ring-2 ring-inset ring-accent" : ""}
                 `}
 			>
 				{/* Day number */}
@@ -126,7 +126,7 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
                         absolute left-2 top-3 z-10
                         flex h-6 w-6 items-center justify-center
                         rounded-full text-xs font-bold
-                        ${isToday ? "bg-brand-red text-white shadow-sm" : isPast ? "text-ink-faint" : "text-ink"}
+                        ${isToday ? "bg-accent text-white shadow-sm" : isPast ? "text-ink-faint" : "text-ink"}
                     `}
 				>
 					{format(day, "d")}
@@ -134,7 +134,7 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
 
 				{/* Today label */}
 				{isToday && (
-					<span className="absolute right-2 top-3.5 z-10 rounded-full bg-brand-red/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-brand-red">
+					<span className="absolute right-2 top-3.5 z-10 rounded-full bg-accent/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-accent">
 						Today
 					</span>
 				)}
@@ -165,9 +165,9 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
                                     transition duration-150
                                     group-hover/day:opacity-100
                                     focus:opacity-100
-                                    hover:border-brand-red-light
-                                    hover:bg-brand-red-tint/60
-                                    hover:text-brand-red
+                                    hover:border-accent-light
+                                    hover:bg-accent-tint/60
+                                    hover:text-accent
                                     active:scale-[0.99]
                                 "
 							>

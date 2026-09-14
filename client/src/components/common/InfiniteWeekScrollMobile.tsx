@@ -329,12 +329,12 @@ export default function InfiniteWeekScrollMobile({
 						absolute inset-x-0 top-0 z-20
 						h-10
 						bg-linear-to-b
-						from-brand-page/90
+						from-canvas/90
 						to-transparent
 					"
 					>
 						<div className="flex justify-center pt-1">
-							<span className="text-xs font-bold text-brand-muted/60">⌃</span>
+							<span className="text-xs font-bold text-ink-muted/60">⌃</span>
 						</div>
 					</div>
 				)}
@@ -347,12 +347,12 @@ export default function InfiniteWeekScrollMobile({
 						absolute inset-x-0 bottom-0 z-20
 						h-10
 						bg-linear-to-t
-						from-brand-page/90
+						from-canvas/90
 						to-transparent
 					"
 					>
 						<div className="flex h-full items-end justify-center pb-1">
-							<span className="text-xs font-bold text-brand-muted/60">⌄</span>
+							<span className="text-xs font-bold text-ink-muted/60">⌄</span>
 						</div>
 					</div>
 				)}

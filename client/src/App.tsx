@@ -5,7 +5,6 @@ import AppProviders from "./contexts/AppProviders";
 import { CalendarPage } from "./pages/CalendarPage";
 import { FriendsPage } from "./pages/FriendsPage";
 import { LoginPage } from "./pages/LoginPage";
-import { OverlapsPage } from "./pages/OverlapsPage";
 import { PlansPage } from "./pages/PlansPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -25,7 +24,6 @@ export default function App() {
 						<Route element={<ProtectedRoute />}>
 							<Route element={<AppShell />}>
 								<Route path="/" element={<Navigate to="/calendar" replace />} />
-								<Route path="/overlaps" element={<OverlapsPage />} />
 								<Route path="/calendar" element={<CalendarPage />} />
 								<Route path="/friends" element={<FriendsPage />} />
 								<Route path="/profile" element={<ProfilePage />} />

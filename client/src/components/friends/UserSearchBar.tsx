@@ -68,7 +68,7 @@ export default function UserSearchBar({ searchUsers, onResults, onSearchingChang
 					onChange={(event) => setSearch(event.target.value)}
 					placeholder="Search users..."
 					autoFocus
-					className="w-full rounded-xl border border-border bg-white py-2 pl-3 pr-10 text-sm text-ink outline-none transition placeholder:text-ink-faint focus:border-brand-red focus:ring-2 focus:ring-brand-red/15"
+					className="w-full rounded-lg border border-border bg-surface py-2 pl-3 pr-10 text-sm text-ink outline-none transition placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent/15"
 				/>
 
 				{search && (
@@ -76,7 +76,7 @@ export default function UserSearchBar({ searchUsers, onResults, onSearchingChang
 						type="button"
 						onClick={clearSearch}
 						aria-label="Clear search"
-						className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-xl leading-none text-ink-muted transition hover:bg-surface-sunken hover:text-brand-red"
+						className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-xl leading-none text-ink-muted transition hover:bg-surface-sunken hover:text-accent"
 					>
 						×
 					</button>

@@ -12,7 +12,7 @@ export function ProtectedRoute() {
 	// token would bounce to /login before it had a chance to refresh
 	if (isInitializing) {
 		return (
-			<div className="flex h-dvh items-center justify-center bg-paper">
+			<div className="flex h-dvh items-center justify-center bg-canvas">
 				<LoadingSpinner />
 			</div>
 		);

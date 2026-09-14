@@ -1,148 +1,182 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 
 @theme {
 	/* ================================================================ */
-	/* Fonts */
+	/* Fonts - single grotesque sans throughout, no serif                */
 	/* ================================================================ */
 
 	--font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-	--font-display: "Fraunces", ui-serif, Georgia, serif;
 
 	/* ================================================================ */
-	/* Overlap-first brand palette                                       */
-	/* "you" (ketchup) and "friend" (mustard) are the app's two core     */
-	/* identity colors - where they conceptually overlap is "overlap".   */
+	/* Palette - dark-first, single accent. Values below are the DARK    */
+	/* (default) theme; [data-theme="light"] overrides them further down.*/
 	/* ================================================================ */
 
-	--color-brand-red: #c1401f;
-	--color-brand-red-dark: #9a3016;
-	--color-brand-red-light: #f1907a;
-	--color-brand-red-tint: #fbddd2;
+	--color-canvas: #0b0c0f;
+	--color-surface: #16171c;
+	--color-surface-sunken: #1e2026;
+	--color-border: #2a2c33;
 
-	--color-brand-mustard: #d99a1f;
-	--color-brand-mustard-dark: #ad7a12;
-	--color-brand-mustard-light: #f0cc7c;
-	--color-brand-mustard-tint: #fbe8be;
+	--color-ink: #f2f2f4;
+	--color-ink-muted: #9a9ba3;
+	--color-ink-faint: #63646c;
 
-	--color-brand-overlap: #d9631f;
-	--color-brand-overlap-dark: #ad4c15;
-	--color-brand-overlap-tint: #f9ddc4;
+	--color-accent: #ff5a36;
+	--color-accent-dark: #e0431f;
+	--color-accent-light: #ff8a6b;
+	--color-accent-tint: #3a2018;
+
+	--color-success: #3ddc84;
+	--color-success-tint: #123322;
+	--color-warning: #ffb020;
+	--color-warning-tint: #3a2c0d;
+	--color-danger: #ff5c5c;
+	--color-danger-tint: #3a1616;
 
 	/* ================================================================ */
-	/* Neutrals (warm-toned, not pure gray)                              */
+	/* Categorical - distinguishes different recurring schedules on the  */
+	/* calendar; no semantic meaning, just visual variety.               */
 	/* ================================================================ */
 
-	--color-ink: #2a211c;
-	--color-ink-muted: #6f5f52;
-	--color-ink-faint: #a8988a;
+	--color-cat-1-bg: #332d18;
+	--color-cat-1-border: #6b5c26;
+	--color-cat-1-text: #e0c96b;
 
-	--color-paper: #fbf6ef;
+	--color-cat-2-bg: #331e18;
+	--color-cat-2-border: #6b3f2a;
+	--color-cat-2-text: #e0a385;
+
+	--color-cat-3-bg: #16281f;
+	--color-cat-3-border: #2f5a41;
+	--color-cat-3-text: #85cba6;
+
+	--color-cat-4-bg: #181e2e;
+	--color-cat-4-border: #2f3d63;
+	--color-cat-4-text: #8fa3d9;
+
+	--color-cat-5-bg: #251b2c;
+	--color-cat-5-border: #513a5e;
+	--color-cat-5-text: #c398d6;
+}
+
+[data-theme="light"] {
+	--color-canvas: #f7f7f8;
 	--color-surface: #ffffff;
-	--color-surface-sunken: #f1e9dc;
-	--color-border: #e6dcc8;
+	--color-surface-sunken: #f0f0f2;
+	--color-border: #e2e2e6;
 
-	/* ================================================================ */
-	/* Semantic                                                          */
-	/* ================================================================ */
+	--color-ink: #16171c;
+	--color-ink-muted: #63646c;
+	--color-ink-faint: #a5a6ad;
 
-	--color-success: #2f9e5c;
-	--color-success-tint: #ddf0e3;
+	--color-accent: #e0431f;
+	--color-accent-dark: #b83718;
+	--color-accent-light: #ff8a6b;
+	--color-accent-tint: #fbe4dd;
+
+	--color-success: #1f9d5c;
+	--color-success-tint: #dcf3e6;
+	--color-warning: #c98300;
+	--color-warning-tint: #fbecd0;
 	--color-danger: #dc2626;
-	--color-danger-tint: #fbe2e1;
+	--color-danger-tint: #fbe0e0;
 
-	/* ================================================================ */
-	/* Legacy aliases - existing components still reference these names. */
-	/* Mapped onto the palette above so they inherit the refreshed look  */
-	/* without edits; removed as each surface is migrated onto the      */
-	/* tokens/components above.                                         */
-	/* ================================================================ */
+	--color-cat-1-bg: #fff3bd;
+	--color-cat-1-border: #e3c66f;
+	--color-cat-1-text: #66531c;
 
-	--color-brand-text: var(--color-ink);
-	--color-brand-muted: var(--color-ink-muted);
-	--color-brand-page: var(--color-paper);
-	--color-brand-surface: var(--color-surface-sunken);
-	--color-brand-card: var(--color-surface);
-	--color-brand-cream: #fbefd6;
-	--color-brand-pink: var(--color-brand-red-tint);
-	--color-brand-pink-light: #fdf0ea;
-	--color-brand-cork: #b8794f;
+	--color-cat-2-bg: #f9ddd2;
+	--color-cat-2-border: #e8b9a9;
+	--color-cat-2-text: #703d35;
+
+	--color-cat-3-bg: #dceee6;
+	--color-cat-3-border: #a9cfbf;
+	--color-cat-3-text: #36594d;
+
+	--color-cat-4-bg: #e2e9f5;
+	--color-cat-4-border: #b9c8e4;
+	--color-cat-4-text: #40506b;
+
+	--color-cat-5-bg: #eee0f2;
+	--color-cat-5-border: #d4b9df;
+	--color-cat-5-text: #60466a;
 }
 
 body {
 	font-family: var(--font-sans);
 	color: var(--color-ink);
-	background-color: var(--color-paper);
+	background-color: var(--color-canvas);
 }
 
 @utility card {
-	@apply rounded-xl border border-stone-200 bg-brand-card shadow-sm;
+	@apply rounded-xl border border-border bg-surface shadow-sm;
 }
 
 @utility btn-primary {
-	@apply shrink-0 rounded-xl bg-brand-red px-3 py-2 text-xs font-bold text-white shadow-sm transition;
-	@apply hover:bg-brand-red-dark;
-	@apply active:scale-[0.97] active:bg-brand-red-dark active:brightness-95;
+	@apply shrink-0 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-sm transition;
+	@apply hover:bg-accent-dark;
+	@apply active:scale-[0.97] active:bg-accent-dark active:brightness-95;
 	@apply sm:px-4 sm:py-2.5 sm:text-sm;
 	@apply disabled:cursor-not-allowed disabled:opacity-60;
 }
 
 @utility btn-secondary {
-	@apply rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-bold text-brand-text transition;
-	@apply hover:bg-brand-surface;
-	@apply active:scale-[0.97] active:bg-stone-100;
+	@apply rounded-lg border border-border bg-surface px-3 py-2 text-xs font-bold text-ink transition;
+	@apply hover:bg-surface-sunken;
+	@apply active:scale-[0.97];
 	@apply sm:px-4 sm:py-2.5 sm:text-sm;
 	@apply disabled:cursor-not-allowed disabled:opacity-60;
 }
 
 @utility btn-danger {
-	@apply rounded-xl border border-red-700 px-3 py-2 text-xs font-bold text-red-600 transition;
-	@apply hover:bg-red-50;
-	@apply active:scale-[0.97] active:bg-red-100;
+	@apply rounded-lg border border-danger px-3 py-2 text-xs font-bold text-danger transition;
+	@apply hover:bg-danger-tint;
+	@apply active:scale-[0.97];
 	@apply sm:px-4 sm:py-2.5 sm:text-sm;
 	@apply disabled:cursor-not-allowed disabled:opacity-60;
 }
 
 @utility plan-label {
-	@apply w-12 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-brand-muted;
+	@apply w-12 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-ink-muted;
 	@apply sm:w-14 sm:text-xs;
 }
 
 @utility plan-input-field {
 	@apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-ink outline-none transition;
 	@apply placeholder:font-normal placeholder:text-ink-faint;
-	@apply focus:border-brand-red focus:ring-2 focus:ring-brand-red/15;
+	@apply focus:border-accent focus:ring-2 focus:ring-accent/15;
 	@apply sm:text-sm;
 }
 
 @utility modal-close-btn {
-	@apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full pb-1 text-xl text-brand-cream transition;
-	@apply hover:bg-white/10 hover:text-white;
-	@apply active:scale-90 active:bg-white/15;
+	@apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full pb-1 text-xl text-ink-muted transition;
+	@apply hover:bg-surface-sunken hover:text-ink;
+	@apply active:scale-90;
 }
 
 @utility modal-step-number {
-	@apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-red text-xs font-bold text-white sm:h-7 sm:w-7 sm:text-sm
+	@apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-white sm:h-7 sm:w-7 sm:text-sm
 }
 
 /* friends */
 
 @utility friend-info-label {
-	@apply w-16 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-brand-muted;
+	@apply w-16 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-ink-muted;
 	@apply sm:w-20 sm:text-xs;
 }
 
 /* for split view pages */
 
 .list-item {
-	@apply flex w-full items-center justify-between rounded-xl border border-stone-200 bg-brand-card p-3 text-left transition;
-	@apply hover:border-stone-300 hover:shadow-sm;
-	@apply active:scale-[0.99] active:bg-stone-50;
+	@apply flex w-full items-center justify-between rounded-lg border border-border bg-surface p-3 text-left transition;
+	@apply hover:border-ink-faint hover:shadow-sm;
+	@apply active:scale-[0.99];
 	@apply sm:p-3.5;
 }
 
 .list-item-selected {
-	@apply border-brand-red-light bg-brand-pink-light shadow-sm ring-1 ring-brand-red/10;
+	@apply border-accent bg-accent-tint shadow-sm ring-1 ring-accent/20;
 }
 
 /* schedule card */
@@ -163,31 +197,12 @@ body {
 	display: none;
 }
 
-@keyframes float-notification {
-	0%,
-	100% {
-		transform: translateY(0);
-	}
-
-	50% {
-		transform: translateY(-3px);
+@keyframes spin-smooth {
+	to {
+		transform: rotate(360deg);
 	}
 }
 
-.animate-float-notification {
-	animation: float-notification 2.5s ease-in-out infinite;
-}
-
-@keyframes overlap-drift {
-	0%,
-	100% {
-		transform: translateX(-3px);
-	}
-	50% {
-		transform: translateX(3px);
-	}
-}
-
-.animate-overlap-drift {
-	animation: overlap-drift 1.4s ease-in-out infinite;
+.animate-spin-smooth {
+	animation: spin-smooth 0.8s linear infinite;
 }

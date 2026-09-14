@@ -38,8 +38,8 @@ export default function PlanDetailsPane({ activePlan, error, isSubmitting, handl
 
 	function showHeader() {
 		return (
-			<div className="shrink-0 border-b border-brand-red-dark bg-brand-red px-4 py-3 sm:px-6">
-				<p className="text-xs font-bold uppercase tracking-wide text-white sm:text-sm">Plan details</p>
+			<div className="shrink-0 border-b border-border bg-surface-sunken px-4 py-3 sm:px-6">
+				<p className="text-xs font-bold uppercase tracking-wide text-ink-muted sm:text-sm">Plan details</p>
 			</div>
 		);
 	}

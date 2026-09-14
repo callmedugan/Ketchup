@@ -37,17 +37,12 @@ export default function Modal({ title, onClose, children, className = "" }: Moda
 				tabIndex={-1}
 				className={`relative flex max-h-[calc(100dvh-1.5rem)] w-[92%] max-w-sm flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl outline-none sm:max-h-[calc(100dvh-2rem)] sm:w-full sm:max-w-md ${className}`}
 			>
-				<div className="flex shrink-0 items-center justify-between gap-3 border-b border-brand-red-dark bg-brand-red px-4 py-3 sm:px-5 sm:py-4">
-					<h2 id={titleId} className="min-w-0 truncate text-lg font-bold text-white sm:text-xl">
+				<div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 sm:px-5 sm:py-4">
+					<h2 id={titleId} className="min-w-0 truncate text-lg font-bold text-ink sm:text-xl">
 						{title}
 					</h2>
 
-					<button
-						type="button"
-						onClick={onClose}
-						aria-label="Close"
-						className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full pb-1 text-xl text-white/80 transition hover:bg-white/10 hover:text-white active:scale-90 active:bg-white/15"
-					>
+					<button type="button" onClick={onClose} aria-label="Close" className="modal-close-btn">
 						×
 					</button>
 				</div>

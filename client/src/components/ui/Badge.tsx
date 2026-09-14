@@ -10,7 +10,7 @@ type BadgeProps = {
 
 const toneStyles: Record<BadgeTone, string> = {
 	success: "bg-success-tint text-success",
-	warning: "bg-brand-mustard-tint text-brand-mustard-dark",
+	warning: "bg-warning-tint text-warning",
 	danger: "bg-danger-tint text-danger",
 	neutral: "bg-surface-sunken text-ink-muted",
 };

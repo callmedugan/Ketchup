@@ -38,11 +38,11 @@ export function AvatarStack({ people, max = 3, variant = "tiny", className = "" 
 	return (
 		<div className={`flex shrink-0 -space-x-1.5 ${className}`} title={people.map((person) => person.name).join(", ")}>
 			{visible.map((person) => (
-				<Avatar key={person.id} name={person.name} rawUrl={person.avatarUrl} variant={variant} className="ring-2 ring-white" />
+				<Avatar key={person.id} name={person.name} rawUrl={person.avatarUrl} variant={variant} className="ring-2 ring-surface" />
 			))}
 
 			{overflow > 0 && (
-				<span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[7px] font-bold text-ink ring-2 ring-white">
+				<span className="flex h-4 w-4 items-center justify-center rounded-full bg-surface-sunken text-[7px] font-bold text-ink ring-2 ring-surface">
 					+{overflow}
 				</span>
 			)}

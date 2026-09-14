@@ -4,6 +4,7 @@ import Avatar from "../ui/Avatar";
 import AvatarPicker from "../ui/AvatarPicker";
 import Button from "../ui/Button";
 import { Textarea } from "../ui/Input";
+import ThemeToggle from "../ui/ThemeToggle";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function Profile() {
@@ -120,6 +121,12 @@ export default function Profile() {
 								<p className="friend-info-label">Email</p>
 								<p className="min-w-0 flex-1 truncate text-sm font-bold text-ink">{user.email}</p>
 							</div>
+
+							{/* Appearance */}
+							<div className="flex items-center gap-5">
+								<p className="friend-info-label">Theme</p>
+								<ThemeToggle />
+							</div>
 						</div>
 
 						{error && <p className="mt-5 rounded-xl border border-danger/20 bg-danger-tint px-4 py-3 text-sm font-medium text-danger">{error}</p>}
@@ -160,7 +167,7 @@ function EditableBioField({ bio, onClick }: { bio: string; onClick: () => void }
 				{bio || <span className="text-ink-faint">Add a bio...</span>}
 			</span>
 
-			<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-muted transition group-hover:bg-surface group-hover:text-brand-red">
+			<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-muted transition group-hover:bg-surface group-hover:text-accent">
 				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
 					<path d="M13.5 3.5l3 3M4 16l1-4 8.5-8.5 3 3L8 15l-4 1z" strokeLinecap="round" strokeLinejoin="round" />
 				</svg>

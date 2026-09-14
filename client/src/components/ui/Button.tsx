@@ -9,7 +9,7 @@ type ButtonProps = {
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 const variantStyles: Record<ButtonVariant, string> = {
-	primary: "bg-brand-red text-white shadow-sm hover:bg-brand-red-dark active:brightness-95",
+	primary: "bg-accent text-white shadow-sm hover:bg-accent-dark active:brightness-95",
 	secondary: "border border-border bg-surface text-ink hover:bg-surface-sunken",
 	danger: "border border-danger text-danger hover:bg-danger-tint",
 	ghost: "text-ink-muted hover:bg-surface-sunken hover:text-ink",
@@ -25,7 +25,7 @@ export default function Button({ variant = "primary", size = "md", type = "butto
 	return (
 		<button
 			type={type}
-			className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl font-bold transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+			className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-lg font-bold transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
 			{...props}
 		/>
 	);

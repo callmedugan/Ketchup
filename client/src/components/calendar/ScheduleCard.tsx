@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import type { ScheduleInstance } from "./Instance";
 
-import OverlapModal from "./OverlapModal";
+import ScheduleDetailModal from "./ScheduleDetailModal";
 import { AvatarStack } from "../ui/Avatar";
 
 type ScheduleCardProps = {
@@ -25,13 +25,14 @@ export default function ScheduleCard({ instance }: ScheduleCardProps) {
 			<button
 				type="button"
 				onClick={() => setIsOpen(true)}
+				style={getScheduleColorVars(instance.scheduleId)}
 				className={`
 					interactive-card
 					relative w-full md:w-auto min-w-0 overflow-hidden
 					rounded-lg border px-2 py-1.5 text-left
 					cursor-pointer
-					hover:brightness-[1.02]
-					${getScheduleColor(instance.scheduleId)}
+					hover:brightness-110
+					border-(--schedule-border) bg-(--schedule-bg) text-(--schedule-text)
 					${hasPassed ? "opacity-50" : "opacity-100"}
 				`}
 			>
@@ -41,8 +42,8 @@ export default function ScheduleCard({ instance }: ScheduleCardProps) {
 				{/* Plan indicator */}
 				{instance.plan && (
 					<span
-						className={`absolute -right-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white text-white shadow-sm ${
-							instance.plan.status === "confirmed" ? "bg-success" : "bg-brand-mustard"
+						className={`absolute -right-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full border-2 border-surface text-white shadow-sm ${
+							instance.plan.status === "confirmed" ? "bg-success" : "bg-warning"
 						}`}
 						title={`${instance.plan.status === "confirmed" ? "Confirmed plan" : "Pending plan"}: ${instance.plan.title}`}
 					>
@@ -50,6 +51,11 @@ export default function ScheduleCard({ instance }: ScheduleCardProps) {
 							<path d="M5 10l3.5 3.5L15 6.5" />
 						</svg>
 					</span>
+				)}
+
+				{/* Overlap indicator */}
+				{overlapFriends.length > 0 && !hasPassed && !instance.plan && (
+					<span className="absolute -left-1 -top-1 z-10 h-2.5 w-2.5 rounded-full border-2 border-surface bg-accent shadow-sm" title="Friends free during this time" />
 				)}
 
 				{/* Time */}
@@ -62,7 +68,7 @@ export default function ScheduleCard({ instance }: ScheduleCardProps) {
 				</div>
 			</button>
 
-			{isOpen && <OverlapModal instance={instance} onClose={() => setIsOpen(false)} />}
+			{isOpen && <ScheduleDetailModal instance={instance} onClose={() => setIsOpen(false)} />}
 		</>
 	);
 
@@ -70,14 +76,8 @@ export default function ScheduleCard({ instance }: ScheduleCardProps) {
 	//                        schedule color
 	/* ========================================================================= */
 
-	function getScheduleColor(id: string): string {
-		const colors = [
-			"border-[#e3c66f] bg-[#fff3bd] text-[#66531c]",
-			"border-[#e8b9a9] bg-[#f9ddd2] text-[#703d35]",
-			"border-[#a9cfbf] bg-[#dceee6] text-[#36594d]",
-			"border-[#b9c8e4] bg-[#e2e9f5] text-[#40506b]",
-			"border-[#d4b9df] bg-[#eee0f2] text-[#60466a]",
-		];
+	function getScheduleColorVars(id: string): Record<string, string> {
+		const categories = 5;
 
 		let hash = 0;
 
@@ -85,6 +85,12 @@ export default function ScheduleCard({ instance }: ScheduleCardProps) {
 			hash = id.charCodeAt(i) + ((hash << 5) - hash);
 		}
 
-		return colors[Math.abs(hash) % colors.length] ?? colors[0]!;
+		const category = (Math.abs(hash) % categories) + 1;
+
+		return {
+			"--schedule-bg": `var(--color-cat-${category}-bg)`,
+			"--schedule-border": `var(--color-cat-${category}-border)`,
+			"--schedule-text": `var(--color-cat-${category}-text)`,
+		} as Record<string, string>;
 	}
 }

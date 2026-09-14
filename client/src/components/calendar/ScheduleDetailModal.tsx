@@ -15,12 +15,12 @@ import Badge from "../ui/Badge";
 
 type ScheduleOverlap = ScheduleInstance["overlaps"][number];
 
-type OverlapModalProps = {
+type ScheduleDetailModalProps = {
 	instance: ScheduleInstance;
 	onClose: () => void;
 };
 
-export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
+export default function ScheduleDetailModal({ instance, onClose }: ScheduleDetailModalProps) {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -71,12 +71,7 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 						</p>
 
 						{instance.plan && (
-							<button
-								type="button"
-								onClick={() => navigate("/plans")}
-								className="mt-1.5 inline-flex"
-								title="View this plan"
-							>
+							<button type="button" onClick={() => navigate("/plans")} className="mt-1.5 inline-flex" title="View this plan">
 								<Badge tone={instance.plan.status === "confirmed" ? "success" : "warning"}>
 									{instance.plan.status === "confirmed" ? "Confirmed" : "Pending"}: {instance.plan.title}
 								</Badge>
@@ -85,7 +80,7 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 					</div>
 
 					{!hasPassed && friendCount > 0 && (
-						<div className="shrink-0 rounded-full border border-brand-red-light/40 bg-brand-red-tint px-2.5 py-1 text-[10px] font-bold text-brand-red-dark sm:text-xs">
+						<div className="shrink-0 rounded-full border border-accent-light/40 bg-accent-tint px-2.5 py-1 text-[10px] font-bold text-accent-dark sm:text-xs">
 							{friendCount} friend
 							{friendCount !== 1 && "s"} free
 						</div>
@@ -96,11 +91,7 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 			{/* Overlaps */}
 			<ScrollableContainer className="min-h-0 flex-1 px-3 py-3 sm:px-5 sm:py-4">
 				<div className="space-y-2">
-					{overlaps.length > 0 ? (
-						overlaps.map(showOverlap)
-					) : (
-						<EmptyState title="No overlap yet" description="No friends are free during this availability." />
-					)}
+					{overlaps.length > 0 ? overlaps.map(showOverlap) : <EmptyState title="No overlap yet" description="No friends are free during this availability." />}
 				</div>
 			</ScrollableContainer>
 
@@ -150,7 +141,7 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 						mt-2.5 w-full
 						${
 							hasPassed || hasExistingPlan
-								? "cursor-not-allowed rounded-xl bg-surface-sunken px-3 py-2 text-xs font-bold text-ink-muted/70 sm:px-4 sm:py-2.5 sm:text-sm"
+								? "cursor-not-allowed rounded-lg bg-surface-sunken px-3 py-2 text-xs font-bold text-ink-muted/70 sm:px-4 sm:py-2.5 sm:text-sm"
 								: "btn-primary"
 						}
 					`}
@@ -186,7 +177,7 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 		if (minutes >= 180) {
 			durationStyle = "text-success";
 		} else if (minutes >= 60) {
-			durationStyle = "text-brand-mustard-dark";
+			durationStyle = "text-warning";
 		}
 
 		return (

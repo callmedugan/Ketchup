@@ -39,10 +39,10 @@ export default function ScrollableContainer({ children, className = "", directio
 			{/* Back fade */}
 			{canScrollBack &&
 				(isVertical ? (
-					<div className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex h-10 items-start justify-center bg-linear-to-b from-brand-surface to-transparent pt-1">
+					<div className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex h-10 items-start justify-center bg-linear-to-b from-surface-sunken to-transparent pt-1">
 						<svg
 							viewBox="0 0 32 8"
-							className="h-2 w-8 text-stone-400"
+							className="h-2 w-8 text-ink-faint"
 							fill="none"
 							stroke="currentColor"
 							strokeWidth="2"
@@ -53,10 +53,10 @@ export default function ScrollableContainer({ children, className = "", directio
 						</svg>
 					</div>
 				) : (
-					<div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 flex w-10 items-center justify-start bg-linear-to-r from-brand-surface to-transparent pl-1">
+					<div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 flex w-10 items-center justify-start bg-linear-to-r from-surface-sunken to-transparent pl-1">
 						<svg
 							viewBox="0 0 8 32"
-							className="h-8 w-2 text-stone-400"
+							className="h-8 w-2 text-ink-faint"
 							fill="none"
 							stroke="currentColor"
 							strokeWidth="2"
@@ -86,10 +86,10 @@ export default function ScrollableContainer({ children, className = "", directio
 			{/* Forward fade */}
 			{canScrollForward &&
 				(isVertical ? (
-					<div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 flex h-10 items-end justify-center bg-linear-to-t from-brand-surface to-transparent pb-1">
+					<div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 flex h-10 items-end justify-center bg-linear-to-t from-surface-sunken to-transparent pb-1">
 						<svg
 							viewBox="0 0 32 8"
-							className="h-2 w-8 text-stone-400"
+							className="h-2 w-8 text-ink-faint"
 							fill="none"
 							stroke="currentColor"
 							strokeWidth="2"
@@ -100,10 +100,10 @@ export default function ScrollableContainer({ children, className = "", directio
 						</svg>
 					</div>
 				) : (
-					<div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 flex w-10 items-center justify-end bg-linear-to-l from-brand-surface to-transparent pr-1">
+					<div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 flex w-10 items-center justify-end bg-linear-to-l from-surface-sunken to-transparent pr-1">
 						<svg
 							viewBox="0 0 8 32"
-							className="h-8 w-2 text-stone-400"
+							className="h-8 w-2 text-ink-faint"
 							fill="none"
 							stroke="currentColor"
 							strokeWidth="2"

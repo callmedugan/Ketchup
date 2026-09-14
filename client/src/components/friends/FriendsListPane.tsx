@@ -49,7 +49,7 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 					className={`
 					border-r border-border px-4 py-3
 					text-sm font-bold transition
-					${listMode === "friends" ? "bg-brand-red text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
+					${listMode === "friends" ? "bg-accent text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
 				`}
 				>
 					Friends
@@ -61,7 +61,7 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 					className={`
 					border-r border-border px-4 py-3
 					text-sm font-bold transition
-					${listMode === "requests" ? "bg-brand-red text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
+					${listMode === "requests" ? "bg-accent text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
 				`}
 				>
 					Requests
@@ -74,7 +74,7 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 					className={`
 					flex items-center justify-center px-4 py-3
 					transition
-					${listMode === "search" ? "bg-brand-red text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
+					${listMode === "search" ? "bg-accent text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
 				`}
 				>
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
@@ -226,7 +226,7 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 				strokeLinejoin="round"
 				className={`
 					ml-3 h-5 w-5 shrink-0 transition
-					${isSelected ? "translate-x-0.5 text-brand-red" : "text-ink-muted/40 group-hover:translate-x-0.5 group-hover:text-ink-muted"}
+					${isSelected ? "translate-x-0.5 text-accent" : "text-ink-muted/40 group-hover:translate-x-0.5 group-hover:text-ink-muted"}
 				`}
 			>
 				<path d="M7 4l6 6-6 6" />

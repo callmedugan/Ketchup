@@ -73,9 +73,9 @@ export function RegisterPage() {
 	}
 
 	return (
-		<main className="flex min-h-screen items-center justify-center bg-paper px-4 py-8">
+		<main className="flex min-h-screen items-center justify-center bg-canvas px-4 py-8">
 			<div className="w-full max-w-md">
-				<div className="rounded-3xl border border-border bg-surface p-7 shadow-[0_12px_35px_rgba(60,30,15,0.08)] sm:p-9">
+				<div className="rounded-3xl border border-border bg-surface p-7 shadow-xl sm:p-9">
 					<div className="mb-8">
 						<Logo showTagLine={true} />
 					</div>
@@ -121,7 +121,7 @@ export function RegisterPage() {
 
 							<p className="text-center text-sm text-ink-muted">
 								Already have an account?{" "}
-								<Link to="/login" className="font-bold text-brand-red transition hover:text-brand-red-dark">
+								<Link to="/login" className="font-bold text-accent transition hover:text-accent-dark">
 									Log in
 								</Link>
 							</p>
