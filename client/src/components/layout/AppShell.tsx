@@ -15,12 +15,17 @@ type NavItem = {
 	badge?: number;
 };
 
+function OverlapsIcon({ className }: { className?: string }) {
+	return <OverlapMark size={20} className={className} />;
+}
+
 export default function AppShell() {
 	const { user, logout } = useAuth();
 	const { friendsNotificationCount } = useFriends();
 	const { plansNotificationCount } = usePlans();
 
 	const navItems: NavItem[] = [
+		{ to: "/overlaps", label: "Overlaps", icon: OverlapsIcon },
 		{ to: "/calendar", label: "Calendar", icon: CalendarIcon },
 		{ to: "/friends", label: "Friends", icon: FriendsIcon, badge: friendsNotificationCount },
 		{ to: "/plans", label: "Plans", icon: PlansIcon, badge: plansNotificationCount },
@@ -80,7 +85,7 @@ export default function AppShell() {
 			</main>
 
 			{/* Mobile bottom nav */}
-			<nav className="grid shrink-0 grid-cols-4 border-t border-border bg-surface md:hidden">
+			<nav className="grid shrink-0 grid-cols-5 border-t border-border bg-surface md:hidden">
 				{navItems.map((item) => (
 					<BottomNavLink key={item.to} item={item} />
 				))}

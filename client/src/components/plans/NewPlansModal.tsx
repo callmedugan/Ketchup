@@ -1,9 +1,9 @@
 import { useState, type SubmitEvent } from "react";
 import { addMinutes, differenceInMinutes, format } from "date-fns";
 import { usePlans } from "../../contexts/PlansContext";
-import ModalContainer from "../common/ModalContainer";
-import ModalHeader from "../common/ModalHeader";
-import Avatar from "../common/Avatar";
+import Modal from "../ui/Modal";
+import Button from "../ui/Button";
+import Avatar from "../ui/Avatar";
 import type { ScheduleInstance } from "../calendar/Instance";
 
 type ScheduleOverlap = ScheduleInstance["overlaps"][number];
@@ -49,25 +49,23 @@ export default function NewPlanModal({ overlap, userScheduleId, onClose }: NewPl
 	}
 
 	return (
-		<ModalContainer onClose={onClose}>
-			<ModalHeader title="New Plan" onClose={onClose} />
-
+		<Modal title="New Plan" onClose={onClose}>
 			<form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto p-4 sm:space-y-5 sm:p-5">
 				<section>
-					<div className="rounded-xl border border-stone-200 bg-brand-surface p-3 sm:p-4">
+					<div className="rounded-xl border border-border bg-surface-sunken p-3 sm:p-4">
 						<div className="space-y-4 sm:space-y-5">
 							{/* When */}
 							<div>
 								<div className="flex items-baseline gap-3 sm:gap-4">
 									<p className="plan-label">When</p>
 
-									<p className="text-xs font-bold text-brand-text sm:text-sm">{format(meetTime, "EEE, MMM d ' @ ' h:mm a")}</p>
+									<p className="text-xs font-bold text-ink sm:text-sm">{format(meetTime, "EEE, MMM d ' @ ' h:mm a")}</p>
 								</div>
 
 								<div className="ml-12 mt-2 sm:ml-18">
 									{showSlider()}
 
-									<div className="mt-1.5 flex justify-between text-[10px] text-brand-muted sm:text-xs">
+									<div className="mt-1.5 flex justify-between text-[10px] text-ink-muted sm:text-xs">
 										<span>{format(overlap.start, "h:mm a")}</span>
 
 										<span>{format(overlap.end, "h:mm a")}</span>
@@ -82,7 +80,7 @@ export default function NewPlanModal({ overlap, userScheduleId, onClose }: NewPl
 								<div className="flex min-w-0 items-center gap-2.5">
 									<Avatar name={overlap.user.name} rawUrl={overlap.user.avatarUrl} />
 
-									<p className="truncate text-xs font-bold text-brand-text sm:text-sm">{overlap.user.name}</p>
+									<p className="truncate text-xs font-bold text-ink sm:text-sm">{overlap.user.name}</p>
 								</div>
 							</div>
 
@@ -136,19 +134,19 @@ export default function NewPlanModal({ overlap, userScheduleId, onClose }: NewPl
 					</div>
 				</section>
 
-				{error && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 sm:text-sm">{error}</p>}
+				{error && <p className="rounded-lg bg-danger-tint px-3 py-2 text-xs text-danger sm:text-sm">{error}</p>}
 
 				<div className="flex gap-2 sm:justify-end">
-					<button type="button" onClick={onClose} disabled={isSubmitting} className="btn-secondary flex-1 sm:flex-none sm:min-w-1/4">
+					<Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting} className="flex-1 sm:flex-none sm:min-w-1/4">
 						Cancel
-					</button>
+					</Button>
 
-					<button type="submit" disabled={isSubmitting} className="btn-primary flex-1 sm:flex-none sm:min-w-1/4">
+					<Button type="submit" disabled={isSubmitting} className="flex-1 sm:flex-none sm:min-w-1/4">
 						{isSubmitting ? "Sending..." : "Send"}
-					</button>
+					</Button>
 				</div>
 			</form>
-		</ModalContainer>
+		</Modal>
 	);
 
 	function showSlider() {
@@ -167,7 +165,7 @@ export default function NewPlanModal({ overlap, userScheduleId, onClose }: NewPl
 
 					[&::-webkit-slider-runnable-track]:h-1.5
 					[&::-webkit-slider-runnable-track]:rounded-full
-					[&::-webkit-slider-runnable-track]:bg-stone-200
+					[&::-webkit-slider-runnable-track]:bg-border
 
 					[&::-webkit-slider-thumb]:-mt-1.5
 					[&::-webkit-slider-thumb]:h-4.5
@@ -178,9 +176,9 @@ export default function NewPlanModal({ overlap, userScheduleId, onClose }: NewPl
 
 					[&::-moz-range-track]:h-1.5
 					[&::-moz-range-track]:rounded-full
-					[&::-moz-range-track]:bg-stone-200
+					[&::-moz-range-track]:bg-border
 
-					[&::-moz-range-progress]:bg-stone-200
+					[&::-moz-range-progress]:bg-border
 
 					[&::-moz-range-thumb]:h-4
 					[&::-moz-range-thumb]:w-4

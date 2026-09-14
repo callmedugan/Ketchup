@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { format, isBefore } from "date-fns";
 import type { Plan } from "../../utils/types";
-import { useAuth } from "../../contexts/AuthContext";
 import ScrollableContainer from "../common/ScrollableContainer";
-import Avatar from "../common/Avatar";
+import Avatar from "../ui/Avatar";
+import Badge from "../ui/Badge";
+import EmptyState from "../ui/EmptyState";
 import { usePlans } from "../../contexts/PlansContext";
 
 type PlansListPaneProps = {
@@ -13,8 +14,7 @@ type PlansListPaneProps = {
 };
 
 export default function PlansListPane({ activePlan, onSelectPlan, onClearError }: PlansListPaneProps) {
-	const { user } = useAuth();
-	const { plans } = usePlans();
+	const { plans, getPlanStatusDisplay } = usePlans();
 
 	const [showActiveOnly, setShowActiveOnly] = useState(true);
 
@@ -24,19 +24,14 @@ export default function PlansListPane({ activePlan, onSelectPlan, onClearError }
 	const visiblePlans = plans
 		.filter((plan) => {
 			const isPast = isBefore(plan.meetTime, now);
-			//hide requests you decline - removed
-			//const isCreator = plan.creatorId === user?.id;
-			//if (plan.status === "declined" && !isCreator) return false;
-			//if toggle is on, only show active not past plans
 			if (showActiveOnly) return !isPast && (plan.status === "pending" || plan.status === "confirmed");
-			//default everything else to true if toggle is off
 			return true;
 		})
 		.sort((a, b) => a.meetTime.getTime() - b.meetTime.getTime());
 
 	function showFilterTabs() {
 		return (
-			<div className="grid shrink-0 grid-cols-2 border-b border-stone-200 bg-brand-card">
+			<div className="grid shrink-0 grid-cols-2 border-b border-border bg-surface">
 				<button
 					type="button"
 					onClick={() => {
@@ -44,9 +39,9 @@ export default function PlansListPane({ activePlan, onSelectPlan, onClearError }
 						onClearError();
 					}}
 					className={`
-						border-r border-stone-200 px-4 py-3
+						border-r border-border px-4 py-3
 						text-sm font-bold transition
-						${showActiveOnly ? "bg-brand-red text-brand-cream" : "text-brand-muted hover:bg-[#f3e9df] hover:text-brand-text"}
+						${showActiveOnly ? "bg-brand-red text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
 					`}
 				>
 					Active
@@ -60,7 +55,7 @@ export default function PlansListPane({ activePlan, onSelectPlan, onClearError }
 					}}
 					className={`
 						px-4 py-3 text-sm font-bold transition
-						${!showActiveOnly ? "bg-brand-red text-brand-cream" : "text-brand-muted hover:bg-[#f3e9df] hover:text-brand-text"}
+						${!showActiveOnly ? "bg-brand-red text-white" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"}
 					`}
 				>
 					All
@@ -84,8 +79,7 @@ export default function PlansListPane({ activePlan, onSelectPlan, onClearError }
 		const isPast = isBefore(plan.meetTime, now);
 		const isInactive = isPast || plan.status === "declined" || plan.status === "cancelled";
 		const isSelected = activePlan?.id === plan.id;
-		const lastUpdatedByName = plan.lastUpdatedBy === user?.id ? "You" : plan.friendName;
-		const status = getPlanStatus(plan, lastUpdatedByName);
+		const status = getPlanStatusDisplay(plan, isPast);
 
 		return (
 			<button key={plan.id} type="button" onClick={() => onSelectPlan(plan)} className={`group list-item ${isSelected ? "list-item-selected" : ""}`}>
@@ -96,18 +90,18 @@ export default function PlansListPane({ activePlan, onSelectPlan, onClearError }
 		);
 	}
 
-	function showPlanInfo(plan: Plan, isInactive: boolean, isPast: boolean, status: ReturnType<typeof getPlanStatus>) {
+	function showPlanInfo(plan: Plan, isInactive: boolean, isPast: boolean, status: ReturnType<typeof getPlanStatusDisplay>) {
 		return (
 			<div className="flex min-w-0 items-center gap-3">
 				<Avatar rawUrl={plan.friendAvatarUrl} name={plan.friendName} isDisabled={isInactive} />
 
 				<div className="min-w-0">
 					<div className="flex items-center gap-2">
-						<h3 className={`truncate font-bold ${isInactive ? "text-brand-muted" : "text-brand-text"}`}>{plan.title}</h3>
-						<span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${status.className}`}>{status.text}</span>
+						<h3 className={`truncate font-bold ${isInactive ? "text-ink-muted" : "text-ink"}`}>{plan.title}</h3>
+						<Badge tone={status.tone}>{status.text}</Badge>
 					</div>
 
-					<p className={`mt-0.5 text-xs font-medium ${isInactive ? "text-brand-muted/70" : "text-brand-muted"}`}>
+					<p className={`mt-0.5 text-xs font-medium ${isInactive ? "text-ink-muted/70" : "text-ink-muted"}`}>
 						{format(plan.meetTime, "EEE, MMM d ' @ ' h:mm a")}
 
 						{isPast && " · (Past)"}
@@ -128,7 +122,7 @@ export default function PlansListPane({ activePlan, onSelectPlan, onClearError }
 				strokeLinejoin="round"
 				className={`
 					ml-3 h-5 w-5 shrink-0 transition
-					${isSelected ? "translate-x-0.5 text-brand-red" : "text-brand-muted/40 group-hover:translate-x-0.5 group-hover:text-brand-muted"}
+					${isSelected ? "translate-x-0.5 text-brand-red" : "text-ink-muted/40 group-hover:translate-x-0.5 group-hover:text-ink-muted"}
 				`}
 			>
 				<path d="M7 4l6 6-6 6" />
@@ -138,53 +132,15 @@ export default function PlansListPane({ activePlan, onSelectPlan, onClearError }
 
 	function showEmptyState() {
 		return (
-			<div className="rounded-xl border border-dashed border-stone-300 bg-brand-card px-5 py-10 text-center">
-				<h3 className="font-bold text-brand-text">{showActiveOnly ? "No active plans" : "No plans yet"}</h3>
-
-				<p className="mx-auto mt-1 max-w-sm text-sm font-medium text-brand-muted">
-					{showActiveOnly ? "You don't have any upcoming plans right now." : "Make some plans with a friend to get started!"}
-				</p>
-			</div>
+			<EmptyState
+				title={showActiveOnly ? "No active plans" : "No plans yet"}
+				description={showActiveOnly ? "You don't have any upcoming plans right now." : "Make some plans with a friend to get started!"}
+			/>
 		);
 	}
 
-	function getPlanStatus(plan: Plan, lastUpdatedByName: string) {
-		switch (plan.status) {
-			case "confirmed":
-				return {
-					text: "Confirmed",
-					className: "bg-emerald-100 text-emerald-700",
-				};
-
-			case "declined":
-				return {
-					text: `Declined by ${lastUpdatedByName}`,
-					className: "bg-stone-200 text-brand-text",
-				};
-
-			case "cancelled":
-				return {
-					text: `Cancelled by ${lastUpdatedByName}`,
-					className: "bg-stone-200 text-brand-text",
-				};
-
-			case "pending":
-				if (plan.creatorId === user?.id) {
-					return {
-						text: "Invite sent",
-						className: "bg-amber-100 text-amber-700",
-					};
-				}
-
-				return {
-					text: "Awaiting response",
-					className: "bg-blue-100 text-blue-700",
-				};
-		}
-	}
-
 	return (
-		<div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-stone-200 bg-brand-surface shadow-sm">
+		<div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface-sunken shadow-sm">
 			{showFilterTabs()}
 
 			{showPlans()}

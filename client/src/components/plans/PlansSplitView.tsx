@@ -82,7 +82,7 @@ export default function PlansSplitView() {
 							<button
 								type="button"
 								onClick={handleBack}
-								className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-bold text-brand-text transition active:scale-[0.97] active:bg-brand-surface"
+								className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-bold text-ink transition active:scale-[0.97] active:bg-surface-sunken"
 							>
 								&lt; Back
 							</button>

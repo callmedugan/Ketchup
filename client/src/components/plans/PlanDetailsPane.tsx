@@ -1,9 +1,12 @@
 import { format, isBefore } from "date-fns";
 import type { Plan } from "../../utils/types";
 import { useAuth } from "../../contexts/AuthContext";
+import { usePlans } from "../../contexts/PlansContext";
 import ScrollableContainer from "../common/ScrollableContainer";
-import HoldButton from "../common/HoldButton";
-import Avatar from "../common/Avatar";
+import HoldButton from "../ui/HoldButton";
+import Avatar from "../ui/Avatar";
+import Badge from "../ui/Badge";
+import Button from "../ui/Button";
 
 type PlanDetailsPaneProps = {
 	activePlan: Plan | null;
@@ -16,9 +19,10 @@ type PlanDetailsPaneProps = {
 
 export default function PlanDetailsPane({ activePlan, error, isSubmitting, handleAccept, handleDecline, handleCancel }: PlanDetailsPaneProps) {
 	const { user } = useAuth();
+	const { getPlanStatusDisplay } = usePlans();
 
 	if (!activePlan) {
-		return <div className="relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-stone-200 bg-brand-card shadow-sm">{showEmptyState()}</div>;
+		return <div className="relative flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">{showEmptyState()}</div>;
 	}
 
 	const plan = activePlan;
@@ -29,21 +33,20 @@ export default function PlanDetailsPane({ activePlan, error, isSubmitting, handl
 
 	const canRespond = isPending && !isCreator && !isPast;
 	const canCancel = !isPast && (plan.status === "pending" || plan.status === "confirmed");
-	const lastUpdatedByName = plan.lastUpdatedBy === user?.id ? "You" : plan.friendName;
 
-	const status = getDetailStatus(plan, isCreator, isPast, lastUpdatedByName);
+	const status = getPlanStatusDisplay(plan, isPast);
 
 	function showHeader() {
 		return (
 			<div className="shrink-0 border-b border-brand-red-dark bg-brand-red px-4 py-3 sm:px-6">
-				<p className="text-xs font-bold uppercase tracking-wide text-brand-cream sm:text-sm">Plan details</p>
+				<p className="text-xs font-bold uppercase tracking-wide text-white sm:text-sm">Plan details</p>
 			</div>
 		);
 	}
 
 	function showDetails() {
 		return (
-			<section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+			<section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
 				<div className="space-y-4 p-4 sm:p-5">
 					{showWhen()}
 					{showWith()}
@@ -60,7 +63,7 @@ export default function PlanDetailsPane({ activePlan, error, isSubmitting, handl
 			<div className="flex items-start gap-3 sm:gap-5">
 				<p className="plan-label">When</p>
 
-				<p className="min-w-0 text-xs font-bold leading-relaxed text-brand-text sm:text-sm">{format(plan.meetTime, "EEEE, MMMM d 'at' h:mm a")}</p>
+				<p className="min-w-0 text-xs font-bold leading-relaxed text-ink sm:text-sm">{format(plan.meetTime, "EEEE, MMMM d 'at' h:mm a")}</p>
 			</div>
 		);
 	}
@@ -73,7 +76,7 @@ export default function PlanDetailsPane({ activePlan, error, isSubmitting, handl
 				<div className="flex min-w-0 items-center gap-2.5">
 					<Avatar name={plan.friendName} rawUrl={plan.friendAvatarUrl} />
 
-					<p className="truncate text-xs font-bold text-brand-text sm:text-sm">{plan.friendName}</p>
+					<p className="truncate text-xs font-bold text-ink sm:text-sm">{plan.friendName}</p>
 				</div>
 			</div>
 		);
@@ -86,7 +89,7 @@ export default function PlanDetailsPane({ activePlan, error, isSubmitting, handl
 			<div className="flex items-start gap-3 sm:gap-5">
 				<p className="plan-label">Where</p>
 
-				<p className="min-w-0 wrap-break-word text-xs font-bold text-brand-text sm:text-sm">{plan.location}</p>
+				<p className="min-w-0 wrap-break-word text-xs font-bold text-ink sm:text-sm">{plan.location}</p>
 			</div>
 		);
 	}
@@ -97,9 +100,9 @@ export default function PlanDetailsPane({ activePlan, error, isSubmitting, handl
 				<p className="plan-label">What</p>
 
 				<div className="min-w-0 flex-1">
-					<p className="wrap-break-word text-xs font-bold text-brand-text sm:text-sm">{plan.title}</p>
+					<p className="wrap-break-word text-xs font-bold text-ink sm:text-sm">{plan.title}</p>
 
-					{plan.comments && <p className="mt-1 whitespace-pre-wrap wrap-break-word text-xs leading-relaxed text-brand-muted sm:text-sm">{plan.comments}</p>}
+					{plan.comments && <p className="mt-1 whitespace-pre-wrap wrap-break-word text-xs leading-relaxed text-ink-muted sm:text-sm">{plan.comments}</p>}
 				</div>
 			</div>
 		);
@@ -110,7 +113,7 @@ export default function PlanDetailsPane({ activePlan, error, isSubmitting, handl
 			<div className="flex items-start gap-3 sm:gap-5">
 				<p className="plan-label mt-1">Status</p>
 
-				<span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold sm:px-3 sm:py-1.5 sm:text-xs ${status.className}`}>{status.text}</span>
+				<Badge tone={status.tone}>{status.text}</Badge>
 			</div>
 		);
 	}
@@ -118,7 +121,7 @@ export default function PlanDetailsPane({ activePlan, error, isSubmitting, handl
 	function showError() {
 		if (!error) return null;
 
-		return <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-xs font-medium text-red-600 sm:px-4 sm:py-3 sm:text-sm">{error}</p>;
+		return <p className="rounded-xl border border-danger/20 bg-danger-tint px-3 py-2.5 text-xs font-medium text-danger sm:px-4 sm:py-3 sm:text-sm">{error}</p>;
 	}
 
 	function showActions() {
@@ -129,9 +132,9 @@ export default function PlanDetailsPane({ activePlan, error, isSubmitting, handl
 						Decline
 					</HoldButton>
 
-					<button type="button" onClick={() => handleAccept(plan)} disabled={isSubmitting} className="btn-primary flex-1 sm:flex-none">
+					<Button onClick={() => handleAccept(plan)} disabled={isSubmitting} className="flex-1 sm:flex-none">
 						{isSubmitting ? "Accepting..." : "Accept plan"}
-					</button>
+					</Button>
 				</div>
 			);
 		}
@@ -152,7 +155,7 @@ export default function PlanDetailsPane({ activePlan, error, isSubmitting, handl
 	return (
 		<div
 			className={`relative flex min-h-0 flex-col overflow-hidden rounded-2xl border shadow-sm ${
-				isPast ? "border-stone-300 bg-stone-100" : "border-stone-200 bg-brand-card"
+				isPast ? "border-border bg-surface-sunken" : "border-border bg-surface"
 			}`}
 		>
 			{showHeader()}
@@ -166,39 +169,15 @@ export default function PlanDetailsPane({ activePlan, error, isSubmitting, handl
 			</ScrollableContainer>
 		</div>
 	);
-
-	function getDetailStatus(plan: Plan, isCreator: boolean, isPast: boolean, lastUpdatedByName: string) {
-		switch (plan.status) {
-			case "confirmed":
-				return { text: "Confirmed", className: "bg-emerald-100 text-emerald-700" };
-
-			case "declined":
-				return { text: `Declined by ${lastUpdatedByName}`, className: "bg-stone-200 text-brand-text" };
-
-			case "cancelled":
-				return { text: `Cancelled by ${lastUpdatedByName}`, className: "bg-stone-200 text-brand-text" };
-
-			case "pending":
-				if (isPast) {
-					return { text: "Expired", className: "bg-stone-200 text-brand-text" };
-				}
-
-				if (isCreator) {
-					return { text: "Invite sent", className: "bg-amber-100 text-amber-700" };
-				}
-
-				return { text: "Awaiting response", className: "bg-blue-100 text-blue-700" };
-		}
-	}
 }
 
 function showEmptyState() {
 	return (
 		<div className="flex h-full min-h-80 items-center justify-center p-5 sm:min-h-100 sm:p-8">
 			<div className="max-w-sm text-center">
-				<h2 className="text-base font-bold text-brand-text sm:text-lg">Select a plan</h2>
+				<h2 className="text-base font-bold text-ink sm:text-lg">Select a plan</h2>
 
-				<p className="mt-1 text-xs font-medium text-brand-muted sm:text-sm">Choose a plan from the list to see details, status, and available actions.</p>
+				<p className="mt-1 text-xs font-medium text-ink-muted sm:text-sm">Choose a plan from the list to see details, status, and available actions.</p>
 			</div>
 		</div>
 	);

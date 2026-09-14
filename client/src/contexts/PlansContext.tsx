@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useAuth } from "./AuthContext";
 import { getPlansFromParsedJson, type Plan, type PlanData } from "../utils/types";
 import { useFriends } from "./FriendsContext";
+import type { BadgeTone } from "../components/ui/Badge";
 
 /* ========================================================================= */
 //                        context
@@ -18,6 +19,7 @@ type PlansContextType = {
 	addPlan: (friendId: string, title: string, comments: string, meetTime: Date, location: string, scheduleIds: [string, string]) => Promise<PlanData[]>;
 	cancelPlan: (id: string) => Promise<PlanData[]>;
 	updatePlanStatus: (id: string, response: "accepted" | "declined") => Promise<PlanData[]>;
+	getPlanStatusDisplay: (plan: Plan, isPast: boolean) => { text: string; tone: BadgeTone };
 };
 
 const PlansContext = createContext<PlansContextType | null>(null);
@@ -145,8 +147,31 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 		return plansData.find((plan) => plan.id === id);
 	}
 
+	function getPlanStatusDisplay(plan: Plan, isPast: boolean): { text: string; tone: BadgeTone } {
+		const isCreator = plan.creatorId === user?.id;
+		const lastUpdatedByName = plan.lastUpdatedBy === user?.id ? "You" : plan.friendName;
+
+		switch (plan.status) {
+			case "confirmed":
+				return { text: "Confirmed", tone: "success" };
+
+			case "declined":
+				return { text: `Declined by ${lastUpdatedByName}`, tone: "neutral" };
+
+			case "cancelled":
+				return { text: `Cancelled by ${lastUpdatedByName}`, tone: "neutral" };
+
+			case "pending":
+				if (isPast) return { text: "Expired", tone: "neutral" };
+				if (isCreator) return { text: "Invite sent", tone: "neutral" };
+				return { text: "Awaiting your response", tone: "warning" };
+		}
+	}
+
 	return (
-		<PlansContext.Provider value={{ plans, fetchPlans, getPlanById, addPlan, cancelPlan, updatePlanStatus, plansNotificationCount }}>
+		<PlansContext.Provider
+			value={{ plans, fetchPlans, getPlanById, addPlan, cancelPlan, updatePlanStatus, plansNotificationCount, getPlanStatusDisplay }}
+		>
 			{children}
 		</PlansContext.Provider>
 	);
