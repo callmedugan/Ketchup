@@ -6,17 +6,21 @@ import { useState } from "react";
 import type { ScheduleInstance } from "./Instance";
 
 import OverlapModal from "./OverlapModal";
+import Avatar from "../common/Avatar";
 
 type ScheduleCardProps = {
 	instance: ScheduleInstance;
 };
+
+const MAX_VISIBLE_AVATARS = 3;
 
 export default function ScheduleCard({ instance }: ScheduleCardProps) {
 	const [isOpen, setIsOpen] = useState(false);
 
 	const hasPassed = instance.end <= new Date();
 
-	const overlapCount = new Set(instance.overlaps.map((overlap) => overlap.user.id)).size;
+	// unique friends overlapping this instance, most recent first occurrence wins
+	const overlapFriends = [...new Map(instance.overlaps.map((overlap) => [overlap.user.id, overlap.user])).values()];
 
 	return (
 		<>
@@ -42,8 +46,18 @@ export default function ScheduleCard({ instance }: ScheduleCardProps) {
 						{format(instance.start, "p")} – {format(instance.end, "p")}
 					</span>
 
-					{overlapCount > 0 && !hasPassed && (
-						<span className="shrink-0 rounded-full bg-white/60 px-1.5 py-0.5 text-[8px] font-bold shadow-sm">{overlapCount}</span>
+					{overlapFriends.length > 0 && !hasPassed && (
+						<div className="flex shrink-0 -space-x-1.5" title={overlapFriends.map((friend) => friend.name).join(", ")}>
+							{overlapFriends.slice(0, MAX_VISIBLE_AVATARS).map((friend) => (
+								<Avatar key={friend.id} name={friend.name} rawUrl={friend.avatarUrl} variant="tiny" className="ring-2 ring-white" />
+							))}
+
+							{overlapFriends.length > MAX_VISIBLE_AVATARS && (
+								<span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[7px] font-bold text-current ring-2 ring-white">
+									+{overlapFriends.length - MAX_VISIBLE_AVATARS}
+								</span>
+							)}
+						</div>
 					)}
 				</div>
 			</button>
