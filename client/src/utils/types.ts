@@ -1,30 +1,29 @@
 import { z } from "zod";
+import {
+	friendSchema,
+	planDataSchema,
+	presetAvatarStrings,
+	isPresetAvatar,
+	timezoneSchema,
+	userSchema,
+	userSearchResultSchema,
+	type Friend,
+	type FriendStatus,
+	type PlanData,
+	type PlanStatus,
+	type PresetAvatarType,
+	type ScheduleRepeatType,
+	type Timezone,
+	type User,
+	type UserSearchResult,
+} from "@ketchup/shared";
+
+export { friendSchema, isPresetAvatar, planDataSchema, presetAvatarStrings, timezoneSchema, userSchema, userSearchResultSchema };
+export type { Friend, FriendStatus as FriendStatusType, PlanData, PlanStatus, PresetAvatarType, ScheduleRepeatType, Timezone, User, UserSearchResult };
 
 /* ========================================================================= */
 //                        shared helpers
 /* ========================================================================= */
-
-export const timezoneSchema = z
-	.string()
-	.trim()
-	.refine(
-		(value) => {
-			try {
-				new Intl.DateTimeFormat("en-US", {
-					timeZone: value,
-				});
-
-				return true;
-			} catch {
-				return false;
-			}
-		},
-		{
-			message: "Invalid timezone",
-		},
-	);
-
-export type Timezone = z.infer<typeof timezoneSchema>;
 
 function parseOneOrMany<T>(schema: z.ZodType<T>, data: unknown): T[] | undefined {
 	const arrayResult = z.array(schema).safeParse(data);
@@ -34,75 +33,9 @@ function parseOneOrMany<T>(schema: z.ZodType<T>, data: unknown): T[] | undefined
 	return undefined;
 }
 
-/* ========================================================================= */
-//                        schedules
-/* ========================================================================= */
-
-//#region schedules
-
-export const scheduleSchema = z.object({
-	id: z.uuid(),
-	userId: z.uuid(),
-	repeatType: z.enum(["once", "daily", "weekly"]),
-	startTime: z.coerce.date(),
-	endTime: z.coerce.date(),
-	timezone: timezoneSchema,
-	createdAt: z.coerce.date(),
-	updatedAt: z.coerce.date(),
-});
-
-export type Schedule = z.infer<typeof scheduleSchema>;
-export type ScheduleRepeatType = Schedule["repeatType"];
-
-export function getScheduleFromParsedJson(data: unknown): Schedule[] | undefined {
-	return parseOneOrMany(scheduleSchema, data);
-}
-
-//#endregion
-
-/* ========================================================================= */
-//                        friends
-/* ========================================================================= */
-
-//#region friends
-
-export const friendSchema = z.object({
-	id: z.uuid(),
-	name: z.string(),
-	bio: z.string(),
-	timezone: timezoneSchema,
-	avatarUrl: z.string(),
-	status: z.enum(["requested", "accepted", "declined", "blocked"]),
-	requestDirection: z.enum(["sent", "received"]),
-	createdAt: z.coerce.date(),
-	updatedAt: z.coerce.date(),
-});
-
-export type Friend = z.infer<typeof friendSchema>;
-export type FriendStatusType = Friend["status"];
-
 export function getFriendsFromParsedJson(data: unknown): Friend[] | undefined {
 	return parseOneOrMany(friendSchema, data);
 }
-
-//#endregion
-
-/* ========================================================================= */
-//                        user
-/* ========================================================================= */
-
-//#region user
-
-export const userSchema = z.object({
-	id: z.uuid(),
-	name: z.string(),
-	email: z.email(),
-	bio: z.string(),
-	timezone: timezoneSchema,
-	avatarUrl: z.string(),
-});
-
-export type User = z.infer<typeof userSchema>;
 
 export function getUserFromParsedJson(data: unknown): User | undefined {
 	const result = userSchema.safeParse(data);
@@ -110,92 +43,22 @@ export function getUserFromParsedJson(data: unknown): User | undefined {
 	return result.data;
 }
 
-//#endregion
-
-/* ========================================================================= */
-//                        user search result
-/* ========================================================================= */
-
-//#region user search result
-
-export const userSearchResultSchema = z.object({
-	id: z.uuid(),
-	name: z.string(),
-	bio: z.string(),
-	timezone: timezoneSchema,
-	avatarUrl: z.string(),
-});
-
-export type UserSearchResult = z.infer<typeof userSearchResultSchema>;
-
 export function getUserSearchResultsFromParsedJson(data: unknown): UserSearchResult[] | undefined {
 	return parseOneOrMany(userSearchResultSchema, data);
 }
-
-//#endregion
-
-/* ========================================================================= */
-//                        plans
-/* ========================================================================= */
-
-//#region plans
-
-export const planDataSchema = z.object({
-	id: z.uuid(),
-	creatorId: z.uuid(),
-	friendId: z.uuid(),
-	status: z.enum(["declined", "pending", "confirmed", "cancelled"]),
-	title: z.string(),
-	comments: z.string(),
-	location: z.string(),
-	meetTime: z.coerce.date(),
-	lastUpdatedBy: z.uuid(),
-	createdAt: z.coerce.date(),
-	updatedAt: z.coerce.date(),
-});
-
-export type PlanData = z.infer<typeof planDataSchema>;
-export type PlanStatus = PlanData["status"];
 
 export function getPlansFromParsedJson(data: unknown): PlanData[] | undefined {
 	return parseOneOrMany(planDataSchema, data);
 }
 
-// frontend
+/* ========================================================================= */
+//                        plans (frontend-only extension)
+/* ========================================================================= */
+
+// the client joins each plan with its friend's display info, resolved from FriendsContext
 export const planSchema = planDataSchema.extend({
 	friendName: z.string(),
 	friendAvatarUrl: z.string(),
 });
 
 export type Plan = z.infer<typeof planSchema>;
-
-//#endregion
-
-/* ========================================================================= */
-//                        avatars
-/* ========================================================================= */
-
-//#region avatars
-
-export const presetAvatarStrings = [
-	"ketchup",
-	"mustard",
-	"mayo",
-	"sriracha",
-	"ranch",
-	"bbq",
-	"honey",
-	"soy",
-	"relish",
-	"hot-sauce",
-	"whole-grain-mustard",
-	"aioli",
-] as const;
-
-export type PresetAvatarType = (typeof presetAvatarStrings)[number];
-
-export function isPresetAvatar(value: string): value is PresetAvatarType {
-	return presetAvatarStrings.includes(value as PresetAvatarType);
-}
-
-//#endregion

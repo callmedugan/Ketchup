@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import { getUserByEmail, addUserToDb, createRefreshToken, getRefreshTokenUser, revokeToken, deleteDb } from "../db/queries.js";
 import { UnauthorizedError, BadRequestError, ConflictError } from "../error.js";
-import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, REFRESH_TOKEN_EXPIRATION_DAYS } from "../data/constants.js";
+import { EMAIL_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, REFRESH_TOKEN_EXPIRATION_DAYS } from "@ketchup/shared";
 import { checkPasswordHash, hashPassword, makeJWT, makeRefreshToken } from "../db/auth.js";
 import { UserLogin } from "../db/schema.js";
 import { logInfo, logWarn } from "./logging.js";
+import { timezoneSchema } from "@ketchup/shared";
 import z from "zod";
 
 // must use trimmed and lowercase email
@@ -20,7 +21,7 @@ const createUserSchema = z.object({
 		.string()
 		.min(PASSWORD_MIN_LENGTH, `Password must be ${PASSWORD_MIN_LENGTH} characters or more`)
 		.max(PASSWORD_MAX_LENGTH, `Password must be ${PASSWORD_MAX_LENGTH} characters or less`),
-	timezone: z.string().trim().min(1, "Timezone cannot be blank"),
+	timezone: timezoneSchema,
 	avatarUrl: z.string().trim().min(1, "Avatar url cannot be blank"),
 });
 

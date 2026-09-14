@@ -1,30 +1,16 @@
 import { Request, Response } from "express";
 import { BadRequestError, UnauthorizedError } from "../error.js";
 import z from "zod";
-import {
-	blockUserInDb,
-	FriendScheduleRecord,
-	FriendScheduleWithTimezone,
-	getAllFriendSchedules,
-	getFriendsInDb,
-	getScheduleByUserFromDb,
-	getUserSchedulesFromDb,
-	removeFriendInDb,
-	requestFriendInDb,
-	respondToFriendRequestInDb,
-	unblockUserInDb,
-} from "../db/queries.js";
+import { requestFriendRequestSchema, respondToFriendRequestBodySchema, removeFriendRequestSchema } from "@ketchup/shared";
+import { blockUserInDb, getFriendsInDb, removeFriendInDb, requestFriendInDb, respondToFriendRequestInDb, unblockUserInDb } from "../db/queries.js";
 import { logInfo } from "./logging.js";
-import { getTimeOverlapRepeating } from "./schedules.js";
-import { addDays, addMonths, addWeeks, differenceInDays } from "date-fns";
-import { ScheduleRecord } from "../db/schema.js";
 
-const requestFriendSchema = z.object({ friendId: z.uuid().min(1, "friendId cannot be blank") });
-const respondToFriendBodySchema = z.object({ response: z.enum(["accepted", "declined"]) });
+const requestFriendSchema = requestFriendRequestSchema;
+const respondToFriendBodySchema = respondToFriendRequestBodySchema;
 const respondToFriendParamsSchema = z.object({ id: z.uuid() });
 const blockSchema = z.object({ id: z.uuid().min(1, "userId cannot be blank") });
 const unblockSchema = z.object({ id: z.uuid().min(1, "userId cannot be blank") });
-const removeFriendSchema = z.object({ friendId: z.uuid().min(1, "friendId cannot be blank") });
+const removeFriendSchema = removeFriendRequestSchema;
 
 export async function handlerRequestFriend(req: Request, res: Response) {
 	// validate user
@@ -145,50 +131,4 @@ export async function handlerGetFriends(req: Request, res: Response) {
 
 	// return
 	res.status(200).json(result);
-}
-
-export async function handlerGetFriendsOverlap(req: Request, res: Response) {
-	// validated user
-	const userId = req.userId;
-	if (!userId) throw new UnauthorizedError("User not authenticated");
-
-	// call db for user
-	const userSchedule = await getScheduleByUserFromDb(userId);
-	if (userSchedule === undefined) throw new Error("Failed to retrieve user schedules");
-	if (userSchedule.length === 0) return res.status(200).json([]);
-
-	// call db for friends
-	const friendSchedules = await getAllFriendSchedules(userId);
-	if (friendSchedules == undefined) throw new Error("Failed to retrieve friends schedules");
-	if (friendSchedules.length === 0) return res.status(200).json([]);
-
-	// find overlaps
-	const overlapsInDateRange: FriendScheduleWithTimezone[] = [];
-
-	//loop through all combinations of user and friends schedules - all should be in utc time
-	for (const user of userSchedule) {
-		for (const friend of friendSchedules) {
-			const overlap = getTimeOverlapRepeating(
-				{ start: user.startTime, end: user.endTime, repeatType: user.repeatType },
-				{ start: friend.startTime, end: friend.endTime, repeatType: friend.repeatType },
-			);
-
-			if (overlap === undefined) continue;
-
-			overlapsInDateRange.push({
-				id: friend.id,
-				userId: friend.userId,
-				startTime: overlap.start,
-				endTime: overlap.end,
-				repeatType: overlap.repeatType,
-				createdAt: friend.createdAt,
-				updatedAt: friend.updatedAt,
-				schedules: [user.id, friend.id],
-				timezone: user.timezone,
-			});
-		}
-	}
-
-	// return
-	res.status(200).send(overlapsInDateRange);
 }

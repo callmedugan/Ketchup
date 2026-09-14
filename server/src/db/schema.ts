@@ -1,5 +1,5 @@
 import { primaryKey, uuid, pgTable, text, timestamp, varchar, pgEnum } from "drizzle-orm/pg-core";
-import { BIO_MAX_LENGTH, COMMENTS_MAX_LENGTH, EMAIL_MAX_LENGTH, TITLE_MAX_LENGTH } from "../data/constants.js";
+import { BIO_MAX_LENGTH, COMMENTS_MAX_LENGTH, EMAIL_MAX_LENGTH, TITLE_MAX_LENGTH } from "@ketchup/shared";
 import z from "zod";
 
 /* ========================================================================= */

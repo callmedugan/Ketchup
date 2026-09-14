@@ -1,0 +1,28 @@
+{
+	"name": "@ketchup/shared",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"dependencies": {
+		"date-fns": "^4.4.0",
+		"date-fns-tz": "^3.2.0",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"typescript": "^6.0.3",
+		"vitest": "^3.2.4"
+	}
+}

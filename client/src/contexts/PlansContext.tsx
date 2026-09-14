@@ -15,7 +15,7 @@ type PlansContextType = {
 	plansNotificationCount: number;
 	fetchPlans: () => Promise<PlanData[]>;
 	getPlanById: (id: string) => PlanData | undefined;
-	addPlan: (friendId: string, title: string, comments: string, meetTime: Date, location: string, scheduleIds: string[]) => Promise<PlanData[]>;
+	addPlan: (friendId: string, title: string, comments: string, meetTime: Date, location: string, scheduleIds: [string, string]) => Promise<PlanData[]>;
 	cancelPlan: (id: string) => Promise<PlanData[]>;
 	updatePlanStatus: (id: string, response: "accepted" | "declined") => Promise<PlanData[]>;
 };
@@ -95,7 +95,7 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 		comments: string,
 		meetTime: Date,
 		location: string,
-		scheduleIds: string[],
+		scheduleIds: [string, string],
 	): Promise<PlanData[]> {
 		const response = await authFetch("/api/plans", {
 			method: "POST",

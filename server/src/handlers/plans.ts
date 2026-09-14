@@ -1,21 +1,19 @@
 import { Request, Response } from "express";
 import { UnauthorizedError, BadRequestError, ForbiddenError, NotFoundError } from "../error.js";
 import z from "zod";
-import { COMMENTS_MAX_LENGTH, LOCATION_MAX_LENGTH, TITLE_MAX_LENGTH } from "../data/constants.js";
-import { addPlanToDb, cancelPlanInDb, checkUsersAreFriendsFromDb, getPlansFromDb, respondToPlanInDb } from "../db/queries.js";
+import { createPlanRequestSchema, respondToPlanRequestSchema } from "@ketchup/shared";
+import {
+	addPlanToDb,
+	areSchedulesAvailableForPlan,
+	cancelPlanInDb,
+	checkUsersAreFriendsFromDb,
+	getPlansFromDb,
+	respondToPlanInDb,
+	verifyPlanSchedulesOwnership,
+} from "../db/queries.js";
 import { logInfo } from "./logging.js";
 
 const planParamsSchema = z.object({ id: z.uuid() });
-
-const createPlanSchema = z.object({
-	friendId: z.uuid().min(1, "friendId cannot be blank"),
-	meetTime: z.coerce.date({ error: "meetTime must be a valid date" }),
-	title: z.string().max(TITLE_MAX_LENGTH, "Title is too long"),
-	comments: z.string().max(COMMENTS_MAX_LENGTH, "Comments are too long").optional(),
-	location: z.string().max(LOCATION_MAX_LENGTH, "Location is too long").optional(),
-});
-
-const respondToPlanSchema = z.object({ response: z.enum(["accepted", "declined"]) });
 
 export async function handlerGetPlans(req: Request, res: Response) {
 	// validate user
@@ -35,26 +33,38 @@ export async function handlerCreatePlans(req: Request, res: Response) {
 	if (!userId) throw new UnauthorizedError("User not authenticated");
 
 	// validate body
-	const body = createPlanSchema.safeParse(req.body);
+	const body = createPlanRequestSchema.safeParse(req.body);
 	if (!body.success) throw new BadRequestError(body.error.issues[0]?.message ?? "Invalid request body");
 
-	const { friendId, meetTime, title, comments, location } = body.data;
+	const { friendId, meetTime, title, comments, location, scheduleIds } = body.data;
 
 	// validate friendship
 	const areFriends = await checkUsersAreFriendsFromDb(userId, friendId);
 	if (!areFriends) throw new ForbiddenError("User is not friends with other user");
 
+	// validate the two schedules this plan was proposed from actually belong to the creator/friend pair
+	const [creatorScheduleId, friendScheduleId] = scheduleIds;
+	const ownershipValid = await verifyPlanSchedulesOwnership(creatorScheduleId, userId, friendScheduleId, friendId);
+	if (!ownershipValid) throw new BadRequestError("Invalid availability selected for this plan");
+
+	// a schedule already committed to another pending/confirmed plan can't be reused
+	const schedulesAvailable = await areSchedulesAvailableForPlan(scheduleIds);
+	if (!schedulesAvailable) throw new BadRequestError("One of these availabilities is already part of another plan");
+
 	// call db
-	const result = await addPlanToDb({
-		creatorId: userId,
-		friendId,
-		status: "pending",
-		meetTime,
-		title,
-		comments: comments ?? "",
-		location: location ?? "",
-		lastUpdatedBy: userId,
-	});
+	const result = await addPlanToDb(
+		{
+			creatorId: userId,
+			friendId,
+			status: "pending",
+			meetTime,
+			title,
+			comments: comments ?? "",
+			location: location ?? "",
+			lastUpdatedBy: userId,
+		},
+		scheduleIds,
+	);
 
 	if (result == undefined) throw new Error("something went wrong adding the plan to the db");
 
@@ -70,7 +80,7 @@ export async function handlerRespondToPlan(req: Request, res: Response) {
 	if (!userId) throw new UnauthorizedError("User not authenticated");
 
 	// validate body
-	const body = respondToPlanSchema.safeParse(req.body);
+	const body = respondToPlanRequestSchema.safeParse(req.body);
 	if (!body.success) throw new BadRequestError(body.error.issues[0]?.message ?? "Invalid request body");
 
 	// validate params

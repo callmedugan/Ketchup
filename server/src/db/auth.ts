@@ -4,7 +4,7 @@ import { UnauthorizedError } from "../error.js";
 //goofy naming clash so have to import like this, pkg as all defaults, destructure and then rename
 import pkg, { JwtPayload } from "jsonwebtoken";
 import { randomBytes } from "crypto";
-import { JWT_TOKEN_EXPIRATION_MINS } from "../data/constants.js";
+import { JWT_TOKEN_EXPIRATION_MINS } from "@ketchup/shared";
 const { sign, verify: jwtVerify } = pkg;
 
 export async function hashPassword(password: string): Promise<string> {

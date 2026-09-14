@@ -1,4 +1,4 @@
-import { and, asc, eq, exists, getTableColumns, ilike, inArray, ne, not, or, sql } from "drizzle-orm";
+import { and, asc, eq, getTableColumns, ilike, inArray, ne, not, or, sql } from "drizzle-orm";
 import { db } from "./index.js";
 import {
 	Friend,
@@ -7,6 +7,7 @@ import {
 	Plan,
 	PlanRecord,
 	plans,
+	planSchedules,
 	RefreshToken,
 	refreshTokens,
 	ScheduleInsert,
@@ -153,7 +154,6 @@ export async function createRefreshToken(token: RefreshToken): Promise<RefreshTo
 
 //will return undefined if token is invalid or expired, otherwise returns userId
 export async function getRefreshTokenUser(tokenIdString: string): Promise<string | undefined> {
-	console.log(tokenIdString);
 	const [result] = await db.select().from(refreshTokens).where(eq(refreshTokens.token, tokenIdString));
 	if (result != undefined && result.revokedAt == null && result.expiresAt > new Date()) {
 		return result.userId;
@@ -321,77 +321,50 @@ export async function checkUsersAreFriendsFromDb(user1: string, user2: string): 
 	return result !== undefined;
 }
 
-//added later
-export type FriendScheduleRecord = ScheduleRecord & {
-	user: {
-		id: UserPublic["id"];
-		name: UserPublic["name"];
-		timezone: UserPublic["timezone"];
-		avatarUrl: UserPublic["avatarUrl"];
-		bio: UserPublic["bio"];
-	};
-};
-export type FriendScheduleWithTimezone = { schedules?: string[] } & ScheduleWithTimeZone;
-
-// gets schedules where a relationship exists between user and any oher user - used to build instances
-export async function getAllFriendSchedules(userId: string): Promise<FriendScheduleRecord[]> {
-	return db
-		.select({
-			...getTableColumns(schedules),
-			user: {
-				id: users.id,
-				name: users.name,
-				timezone: users.timezone,
-				avatarUrl: users.avatarUrl,
-				bio: users.bio,
-			},
-		})
-		.from(schedules)
-		.innerJoin(users, eq(users.id, schedules.userId))
-		.where(
-			exists(
-				db
-					.select()
-					.from(friends)
-					.where(
-						and(
-							eq(friends.status, "accepted"),
-							or(
-								and(eq(friends.requesterId, userId), eq(friends.responderId, schedules.userId)),
-								and(eq(friends.responderId, userId), eq(friends.requesterId, schedules.userId)),
-							),
-						),
-					),
-			),
-		);
-}
-
-//used to build instances
-export async function getUserSchedulesFromDb(userId: string): Promise<FriendScheduleRecord[]> {
-	const result = await db
-		.select({
-			...getTableColumns(schedules),
-			user: {
-				id: users.id,
-				name: users.name,
-				timezone: users.timezone,
-				avatarUrl: users.avatarUrl,
-				bio: users.bio,
-			},
-		})
-		.from(schedules)
-		.innerJoin(users, eq(users.id, schedules.userId))
-		.where(eq(schedules.userId, userId));
-	return result;
-}
 
 /* ========================================================================= */
 //                        plans
 /* ========================================================================= */
 
-export async function addPlanToDb(plan: Plan): Promise<PlanRecord | undefined> {
-	const [result] = await db.insert(plans).values(plan).onConflictDoNothing().returning();
-	return result;
+// verifies the two schedules a plan is proposed from actually belong to the creator/friend pair
+export async function verifyPlanSchedulesOwnership(
+	creatorScheduleId: string,
+	creatorId: string,
+	friendScheduleId: string,
+	friendId: string,
+): Promise<boolean> {
+	const rows = await db
+		.select({ id: schedules.id, userId: schedules.userId })
+		.from(schedules)
+		.where(inArray(schedules.id, [creatorScheduleId, friendScheduleId]));
+
+	const creatorSchedule = rows.find((row) => row.id === creatorScheduleId);
+	const friendSchedule = rows.find((row) => row.id === friendScheduleId);
+
+	return creatorSchedule?.userId === creatorId && friendSchedule?.userId === friendId;
+}
+
+// a schedule already linked to a pending/confirmed plan can't be proposed for another one
+export async function areSchedulesAvailableForPlan(scheduleIds: [string, string]): Promise<boolean> {
+	const [result] = await db
+		.select({ scheduleId: planSchedules.scheduleId })
+		.from(planSchedules)
+		.innerJoin(plans, eq(plans.id, planSchedules.planId))
+		.where(and(inArray(planSchedules.scheduleId, scheduleIds), or(eq(plans.status, "pending"), eq(plans.status, "confirmed"))))
+		.limit(1);
+
+	return result === undefined;
+}
+
+export async function addPlanToDb(plan: Plan, scheduleIds: [string, string]): Promise<PlanRecord | undefined> {
+	return db.transaction(async (tx) => {
+		const [result] = await tx.insert(plans).values(plan).onConflictDoNothing().returning();
+		if (!result) return undefined;
+
+		await tx.insert(planSchedules).values(scheduleIds.map((scheduleId) => ({ planId: result.id, scheduleId })));
+
+		return result;
+	});
 }
 
 //gets all plans where user is either creator or friend
