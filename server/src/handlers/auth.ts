@@ -31,6 +31,8 @@ const loginSchema = z.object({
 	password: z.string().min(1, "Password cannot be blank"),
 });
 
+const logoutRequestSchema = z.object({ refreshToken: z.string().min(1, "refreshToken cannot be blank") });
+
 export async function handlerCreateUser(req: Request, res: Response) {
 	// validate body
 	const body = createUserSchema.safeParse(req.body);
@@ -127,15 +129,19 @@ export async function handlerRefresh(req: Request, res: Response) {
 }
 
 export async function handlerLogout(req: Request, res: Response) {
-	// validate token
-	const token = req.token;
-	if (token == undefined) throw new BadRequestError("Failed to get token from header to logout");
+	// validate user
+	const userId = req.userId;
+	if (!userId) throw new UnauthorizedError("User not authenticated");
 
-	// revoke refresh token
-	const revoke = await revokeToken(token);
-	if (!revoke) throw new Error("User was not logged in - no refresh token exists");
+	// validate body
+	const body = logoutRequestSchema.safeParse(req.body);
+	if (!body.success) throw new BadRequestError(body.error.issues[0]?.message ?? "Invalid request body");
 
-	logInfo("auth.logout_succeeded");
+	// best-effort: revoke the refresh token so it can no longer mint new access tokens. Logout
+	// should always succeed from the caller's perspective even if the token was already revoked/expired.
+	await revokeToken(userId, body.data.refreshToken);
+
+	logInfo("auth.logout_succeeded", { userId });
 
 	// return
 	res.status(200).send();

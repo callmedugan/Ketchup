@@ -1,27 +1,26 @@
 import { Link, useNavigate } from "react-router-dom";
-import Button from "../components/Button";
-import { InputField } from "../components/InputField";
-import Logo from "../components/Logo";
+import { presetAvatarStrings, type PresetAvatarType } from "@ketchup/shared";
 import { useEffect, useRef, useState, type SubmitEvent } from "react";
-import { LoadingIndicator } from "../components/LoadingIndicator";
-import { presetAvatarStrings } from "../utils/types";
+import Logo from "../components/Logo";
+import { Input } from "../components/ui/Input";
+import Button from "../components/ui/Button";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import AvatarPicker from "../components/ui/AvatarPicker";
 
 export function RegisterPage() {
-	// for routing
 	const navigate = useNavigate();
 
-	// states for various fields
 	const firstNameRef = useRef<HTMLInputElement>(null);
 	const lastNameRef = useRef<HTMLInputElement>(null);
 	const emailRef = useRef<HTMLInputElement>(null);
 	const passwordRef = useRef<HTMLInputElement>(null);
 
-	// error and loading state for server await and response
+	const [avatarUrl, setAvatarUrl] = useState<PresetAvatarType>(() => presetAvatarStrings[Math.floor(Math.random() * presetAvatarStrings.length)]!);
+
 	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [wasSuccessful, setWasSuccessful] = useState(false);
 
-	// useeffect for waiting after success before routing to login page
 	useEffect(() => {
 		if (!wasSuccessful) return;
 
@@ -44,9 +43,6 @@ export function RegisterPage() {
 
 		//used to save to user and convert all times to local
 		const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-		//avatar
-		const avatarUrl = presetAvatarStrings[Math.floor(Math.random() * presetAvatarStrings.length)];
 
 		try {
 			const response = await fetch(`/api/users`, {
@@ -77,59 +73,55 @@ export function RegisterPage() {
 	}
 
 	return (
-		<main className="flex min-h-screen items-center justify-center bg-brand-cork bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.12)_0_1px,transparent_1px),radial-gradient(circle_at_80%_70%,rgba(80,40,20,0.12)_0_1px,transparent_1px)] bg-size[11px_11px,17px_17px] px-4 py-8">
+		<main className="flex min-h-screen items-center justify-center bg-paper px-4 py-8">
 			<div className="w-full max-w-md">
-				{/* Paper card */}
-				<div className="rounded-3xl border border-stone-300/70 bg-brand-page p-7 shadow-[0_12px_35px_rgba(60,30,15,0.22)] sm:p-9">
-					{/* Logo */}
+				<div className="rounded-3xl border border-border bg-surface p-7 shadow-[0_12px_35px_rgba(60,30,15,0.08)] sm:p-9">
 					<div className="mb-8">
 						<Logo showTagLine={true} />
 					</div>
 
 					{wasSuccessful ? (
 						<div className="py-8">
-							<LoadingIndicator variant="Register" />
+							<LoadingSpinner label={"Account created! Redirecting to login..."} />
 						</div>
 					) : (
 						<>
-							{/* Heading */}
-							<div className="mb-6">
-								<h1 className="mt-1 text-2xl font-bold tracking-tight text-center text-stone-500">Create your account</h1>
-							</div>
+							<h1 className="mb-6 text-center text-2xl font-bold tracking-tight text-ink">Create your account</h1>
 
-							<form onSubmit={handleSubmit} className="space-y-5">
-								<div className="grid grid-cols-2 gap-4">
-									<InputField variant="firstName" ref={firstNameRef}>
-										First Name
-									</InputField>
-
-									<InputField variant="lastName" ref={lastNameRef}>
-										Last Name
-									</InputField>
+							<form onSubmit={handleSubmit} className="space-y-4">
+								<div className="grid grid-cols-2 gap-3">
+									<Input label="First name" id="firstName" required ref={firstNameRef} autoComplete="given-name" />
+									<Input label="Last name" id="lastName" required ref={lastNameRef} autoComplete="family-name" />
 								</div>
 
-								<InputField variant="email" placeholder="" ref={emailRef} />
+								<Input label="Email" id="email" type="email" required ref={emailRef} autoComplete="email" placeholder="you@example.com" />
+								<Input label="Password" id="password" type="password" required ref={passwordRef} autoComplete="new-password" placeholder="••••••••" />
 
-								<InputField variant="password" autoComplete="new-password" placeholder="" ref={passwordRef} />
+								<div>
+									<p className="mb-1.5 block text-xs font-semibold text-ink-muted">Choose an avatar</p>
+									<AvatarPicker value={avatarUrl} onChange={setAvatarUrl} />
+								</div>
 
 								{error && (
-									<div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700">
+									<div role="alert" className="rounded-xl border border-danger/20 bg-danger-tint px-4 py-3 text-center text-sm text-danger">
 										{error}
 									</div>
 								)}
 
-								<Button disabled={isLoading}>{isLoading ? "Creating account..." : "Create account"}</Button>
+								<Button type="submit" disabled={isLoading} className="w-full" size="lg">
+									{isLoading ? "Creating account..." : "Create account"}
+								</Button>
 							</form>
 
 							<div className="my-6 flex items-center gap-3">
-								<div className="h-px flex-1 bg-stone-200" />
-								<span className="text-xs text-stone-400">OR</span>
-								<div className="h-px flex-1 bg-stone-200" />
+								<div className="h-px flex-1 bg-border" />
+								<span className="text-xs text-ink-faint">OR</span>
+								<div className="h-px flex-1 bg-border" />
 							</div>
 
-							<p className="text-center text-sm text-stone-500">
+							<p className="text-center text-sm text-ink-muted">
 								Already have an account?{" "}
-								<Link to="/login" className="font-bold text-[#d94b3d] transition hover:text-[#c94034]">
+								<Link to="/login" className="font-bold text-brand-red transition hover:text-brand-red-dark">
 									Log in
 								</Link>
 							</p>
@@ -137,8 +129,7 @@ export function RegisterPage() {
 					)}
 				</div>
 
-				{/* Small brand footer */}
-				<p className="mt-5 text-center text-xs font-medium text-[#f7e9d7]/80">Powered by React · TypeScript · Node.js</p>
+				<p className="mt-5 text-center text-xs font-medium text-ink-faint">Powered by React · TypeScript · Node.js</p>
 			</div>
 		</main>
 	);

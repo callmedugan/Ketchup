@@ -161,9 +161,13 @@ export async function getRefreshTokenUser(tokenIdString: string): Promise<string
 	return undefined;
 }
 
-//will revoke a token and return true on success
-export async function revokeToken(tokenIdString: string): Promise<boolean> {
-	const [result] = await db.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.token, tokenIdString)).returning();
+//revokes a token owned by the given user and returns true on success
+export async function revokeToken(userId: string, tokenIdString: string): Promise<boolean> {
+	const [result] = await db
+		.update(refreshTokens)
+		.set({ revokedAt: new Date() })
+		.where(and(eq(refreshTokens.token, tokenIdString), eq(refreshTokens.userId, userId)))
+		.returning();
 	return result != undefined;
 }
 
