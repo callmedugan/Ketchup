@@ -100,7 +100,7 @@ export default function MobileCalendar({ initialWeek, minWeek, maxWeek, getSched
 		//                        styles
 		/* ========================================================================= */
 		const headerBackground = isPast ? "bg-stone-300" : isAlternateWeek ? "bg-brand-pink" : "bg-[#f3dfcf]";
-		const cardBackground = isPast ? "bg-stone-100" : isAlternateWeek ? "bg-brand-pink/5" : "bg-[#f3dfcf]/10";
+		const cardBackground = isPast ? "bg-stone-100" : "bg-brand-card";
 
 		const borderColor = isToday ? "border-brand-red-dark" : isPast ? "border-stone-300" : "border-brand-red-dark/50";
 
