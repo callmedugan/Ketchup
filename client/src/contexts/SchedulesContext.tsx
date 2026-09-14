@@ -20,6 +20,7 @@ const scheduleDataSchema = z.object({
 type ScheduleContextType = {
 	userSchedules: ScheduleWithUserInfo[];
 	friendSchedules: ScheduleWithUserInfo[];
+	isLoadingSchedules: boolean;
 	fetchScheduleData: () => Promise<void>;
 	buildScheduleInstances: (rangeStart: Date, rangeEnd: Date) => ScheduleInstance[];
 	deleteUserSchedule: (id: string) => Promise<void>;
@@ -46,6 +47,7 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 	const { user, authFetch } = useAuth();
 	const [userSchedules, setUserSchedules] = useState<ScheduleWithUserInfo[]>([]);
 	const [friendSchedules, setFriendSchedules] = useState<ScheduleWithUserInfo[]>([]);
+	const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
 
 	/* ========================================================================= */
 	// initial fetch
@@ -55,10 +57,12 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 		if (!user) {
 			setUserSchedules([]);
 			setFriendSchedules([]);
+			setIsLoadingSchedules(false);
 			return;
 		}
 
-		fetchScheduleData();
+		setIsLoadingSchedules(true);
+		fetchScheduleData().finally(() => setIsLoadingSchedules(false));
 	}, [user]);
 
 	/* ========================================================================= */
@@ -127,6 +131,7 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 			value={{
 				userSchedules,
 				friendSchedules,
+				isLoadingSchedules,
 				fetchScheduleData,
 				buildScheduleInstances,
 				deleteUserSchedule,

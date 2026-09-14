@@ -24,16 +24,9 @@ export default function InfiniteWeekScrollMobile({
 	renderWeek,
 	stickyHeader,
 }: InfiniteWeekScrollMobileProps) {
-	if (!isValid(initialWeek) || !isValid(initialDate) || !isValid(minWeek) || !isValid(maxWeek)) {
-		console.error("Invalid InfiniteWeekScrollMobile dates:", {
-			initialWeek,
-			initialDate,
-			minWeek,
-			maxWeek,
-		});
-
-		return null;
-	}
+	// hooks below must run unconditionally regardless of prop validity (rules of hooks) -
+	// invalid dates just flow through as harmless no-op values until the guard right before render
+	const propsAreValid = isValid(initialWeek) && isValid(initialDate) && isValid(minWeek) && isValid(maxWeek);
 
 	const normalizedInitialWeek = startOfWeek(initialWeek, {
 		weekStartsOn: 0,
@@ -293,6 +286,11 @@ export default function InfiniteWeekScrollMobile({
 	/* ========================================================================= */
 	//                        page
 	/* ========================================================================= */
+
+	if (!propsAreValid) {
+		console.error("Invalid InfiniteWeekScrollMobile dates:", { initialWeek, initialDate, minWeek, maxWeek });
+		return null;
+	}
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">

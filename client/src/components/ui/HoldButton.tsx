@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 type HoldButtonVariant = "primary" | "secondary" | "danger";
 
@@ -60,6 +60,19 @@ export default function HoldButton({ children, onComplete, disabled = false, hol
 		clearHold();
 	}
 
+	// pointer events alone leave this unreachable by keyboard - Enter/Space fire keydown/keyup,
+	// not pointerdown/pointerup, so a held key needs the same start/cancel treatment
+	function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		event.preventDefault();
+		startHold();
+	}
+
+	function handleKeyUp(event: KeyboardEvent<HTMLButtonElement>) {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		cancelHold();
+	}
+
 	return (
 		<button
 			type="button"
@@ -67,8 +80,10 @@ export default function HoldButton({ children, onComplete, disabled = false, hol
 			onPointerUp={cancelHold}
 			onPointerLeave={cancelHold}
 			onPointerCancel={cancelHold}
+			onKeyDown={handleKeyDown}
+			onKeyUp={handleKeyUp}
 			disabled={disabled}
-			className={`relative inline-flex shrink-0 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-sm font-bold transition select-none active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 ${styles.button} ${className}`}
+			className={`relative inline-flex shrink-0 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 py-2.5 text-sm font-bold transition select-none active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${styles.button} ${className}`}
 		>
 			<div className={`pointer-events-none absolute inset-y-0 left-0 ${styles.fill}`} style={{ width: `${progress * 100}%` }} />
 			<span className="relative z-10">{children}</span>

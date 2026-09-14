@@ -11,12 +11,13 @@ import OverlapEntryCard from "./OverlapEntryCard";
 import OverlapMark from "../ui/OverlapMark";
 import EmptyState from "../ui/EmptyState";
 import Button from "../ui/Button";
+import LoadingSpinner from "../ui/LoadingSpinner";
 
 const LOOKAHEAD_DAYS = 14;
 
 export default function OverlapsFeed() {
-	const { buildScheduleInstances, userSchedules } = useSchedule();
-	const { friends } = useFriends();
+	const { buildScheduleInstances, userSchedules, isLoadingSchedules } = useSchedule();
+	const { friends, isLoadingFriends } = useFriends();
 	const navigate = useNavigate();
 
 	const [selectedInstance, setSelectedInstance] = useState<ScheduleInstance | null>(null);
@@ -35,6 +36,14 @@ export default function OverlapsFeed() {
 	}, [buildScheduleInstances]);
 
 	const dayGroups = useMemo(() => groupByDay(overlapInstances), [overlapInstances]);
+
+	if (isLoadingFriends || isLoadingSchedules) {
+		return (
+			<div className="flex flex-1 items-center justify-center">
+				<LoadingSpinner label="Loading..." />
+			</div>
+		);
+	}
 
 	if (!hasFriends) {
 		return (

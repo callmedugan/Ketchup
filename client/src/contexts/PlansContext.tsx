@@ -14,6 +14,7 @@ import type { BadgeTone } from "../components/ui/Badge";
 type PlansContextType = {
 	plans: Plan[];
 	plansNotificationCount: number;
+	isLoadingPlans: boolean;
 	fetchPlans: () => Promise<PlanData[]>;
 	getPlanById: (id: string) => PlanData | undefined;
 	addPlan: (friendId: string, title: string, comments: string, meetTime: Date, location: string, scheduleIds: [string, string]) => Promise<PlanData[]>;
@@ -41,15 +42,18 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 	const { friends } = useFriends();
 
 	const [plansData, setPlansData] = useState<PlanData[]>([]);
+	const [isLoadingPlans, setIsLoadingPlans] = useState(false);
 
 	// fetch plans when user updates
 	useEffect(() => {
 		if (!user) {
 			setPlansData([]);
+			setIsLoadingPlans(false);
 			return;
 		}
 
-		fetchPlans();
+		setIsLoadingPlans(true);
+		fetchPlans().finally(() => setIsLoadingPlans(false));
 	}, [user]);
 
 	//only build out if the data has been changed
@@ -170,7 +174,7 @@ export const PlansProvider = ({ children }: PlansProviderProps) => {
 
 	return (
 		<PlansContext.Provider
-			value={{ plans, fetchPlans, getPlanById, addPlan, cancelPlan, updatePlanStatus, plansNotificationCount, getPlanStatusDisplay }}
+			value={{ plans, fetchPlans, getPlanById, addPlan, cancelPlan, updatePlanStatus, plansNotificationCount, isLoadingPlans, getPlanStatusDisplay }}
 		>
 			{children}
 		</PlansContext.Provider>

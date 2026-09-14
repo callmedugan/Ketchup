@@ -76,6 +76,7 @@ export default function NewScheduleModal({ onClose, initialDate }: NewScheduleMo
 					<StepTitle text="Choose a date" num="1" />
 
 					<Input
+						label="Date"
 						id="availability-date"
 						type="date"
 						required

@@ -151,6 +151,7 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
 							<button
 								type="button"
 								onClick={() => onAddAvailability?.(day)}
+								aria-label={`Add availability for ${format(day, "MMMM d")}`}
 								className="
                                     flex w-full shrink-0
                                     items-center justify-center

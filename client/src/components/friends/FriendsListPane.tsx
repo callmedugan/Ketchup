@@ -12,7 +12,7 @@ import UserSearchBar from "./UserSearchBar";
 type FriendsListPaneProps = { activeUser: SelectedFriendUser | null; onSelectUser: (user: SelectedFriendUser) => void; onClearSelection: () => void };
 
 export default function FriendsListPane({ activeUser, onSelectUser, onClearSelection }: FriendsListPaneProps) {
-	const { friends, getStatusDisplay, searchUsers } = useFriends();
+	const { friends, getStatusDisplay, searchUsers, isLoadingFriends } = useFriends();
 
 	type ListMode = "friends" | "requests" | "search";
 	const [listMode, setListMode] = useState<ListMode>("friends");
@@ -196,6 +196,14 @@ export default function FriendsListPane({ activeUser, onSelectUser, onClearSelec
 		}
 
 		// Friends or Requests
+		if (isLoadingFriends) {
+			return (
+				<div className="flex flex-1 items-center justify-center py-8">
+					<LoadingSpinner size={28} />
+				</div>
+			);
+		}
+
 		return (
 			<ScrollableContainer className="p-3 sm:p-4">
 				<div className="flex flex-col gap-2.5">

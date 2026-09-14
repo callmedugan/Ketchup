@@ -25,7 +25,7 @@ export default function Button({ variant = "primary", size = "md", type = "butto
 	return (
 		<button
 			type={type}
-			className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl font-bold transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+			className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl font-bold transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
 			{...props}
 		/>
 	);

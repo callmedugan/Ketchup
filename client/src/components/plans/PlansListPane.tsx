@@ -5,6 +5,7 @@ import ScrollableContainer from "../common/ScrollableContainer";
 import Avatar from "../ui/Avatar";
 import Badge from "../ui/Badge";
 import EmptyState from "../ui/EmptyState";
+import LoadingSpinner from "../ui/LoadingSpinner";
 import { usePlans } from "../../contexts/PlansContext";
 
 type PlansListPaneProps = {
@@ -14,7 +15,7 @@ type PlansListPaneProps = {
 };
 
 export default function PlansListPane({ activePlan, onSelectPlan, onClearError }: PlansListPaneProps) {
-	const { plans, getPlanStatusDisplay } = usePlans();
+	const { plans, getPlanStatusDisplay, isLoadingPlans } = usePlans();
 
 	const [showActiveOnly, setShowActiveOnly] = useState(true);
 
@@ -65,6 +66,14 @@ export default function PlansListPane({ activePlan, onSelectPlan, onClearError }
 	}
 
 	function showPlans() {
+		if (isLoadingPlans) {
+			return (
+				<div className="flex flex-1 items-center justify-center py-8">
+					<LoadingSpinner size={28} />
+				</div>
+			);
+		}
+
 		return (
 			<ScrollableContainer className="p-3 sm:p-4">
 				<div className="flex flex-col gap-2.5">

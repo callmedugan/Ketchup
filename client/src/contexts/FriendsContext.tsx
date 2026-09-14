@@ -13,6 +13,7 @@ import type { BadgeTone } from "../components/ui/Badge";
 type FriendsContextType = {
 	friends: Friend[];
 	friendsNotificationCount: number;
+	isLoadingFriends: boolean;
 
 	fetchFriends: () => Promise<Friend[]>;
 	searchUsers: (search: string) => Promise<UserSearchResult[]>;
@@ -48,14 +49,17 @@ export const FriendsProvider = ({ children }: FriendsProviderProps) => {
 	const { user, authFetch } = useAuth();
 
 	const [friends, setFriends] = useState<Friend[]>([]);
+	const [isLoadingFriends, setIsLoadingFriends] = useState(false);
 
 	useEffect(() => {
 		if (!user) {
 			setFriends([]);
+			setIsLoadingFriends(false);
 			return;
 		}
 
-		fetchFriends();
+		setIsLoadingFriends(true);
+		fetchFriends().finally(() => setIsLoadingFriends(false));
 	}, [user]);
 
 	const friendsNotificationCount = useMemo(() => {
@@ -201,6 +205,7 @@ export const FriendsProvider = ({ children }: FriendsProviderProps) => {
 			value={{
 				friends,
 				friendsNotificationCount,
+				isLoadingFriends,
 
 				fetchFriends,
 				searchUsers,
