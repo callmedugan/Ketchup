@@ -5,7 +5,6 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useFriends } from "../../contexts/FriendsContext";
 import { usePlans } from "../../contexts/PlansContext";
 import Avatar from "../ui/Avatar";
-import BrandMark from "../ui/BrandMark";
 import { CalendarIcon, FriendsIcon, LogoutIcon, PlansIcon, ProfileIcon } from "../ui/icons";
 
 type NavItem = {
@@ -31,9 +30,10 @@ export default function AppShell() {
 		<div className="flex h-dvh flex-col bg-canvas md:flex-row">
 			{/* Desktop sidebar */}
 			<aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-surface md:flex">
-				<div className="flex items-center gap-2 px-5 py-5">
-					<BrandMark size={28} />
-					<span className="text-xl font-extrabold tracking-tight text-ink">Ketchup</span>
+				<div className="flex items-center px-5 py-5">
+					<span className="text-xl font-extrabold tracking-tight text-ink">
+						<span className="text-accent">K</span>etchup
+					</span>
 				</div>
 
 				<nav className="flex flex-1 flex-col gap-1 px-3">
@@ -64,9 +64,10 @@ export default function AppShell() {
 
 			{/* Mobile header */}
 			<header className="flex shrink-0 items-center justify-between border-b border-border bg-surface px-4 py-3 md:hidden">
-				<div className="flex items-center gap-2">
-					<BrandMark size={22} />
-					<span className="text-lg font-extrabold tracking-tight text-ink">Ketchup</span>
+				<div className="flex items-center">
+					<span className="text-lg font-extrabold tracking-tight text-ink">
+						<span className="text-accent">K</span>etchup
+					</span>
 				</div>
 
 				{user && <Avatar name={user.name} rawUrl={user.avatarUrl} variant="small" />}

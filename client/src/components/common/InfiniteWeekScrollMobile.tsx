@@ -1,5 +1,6 @@
 import { addWeeks, isAfter, isBefore, isValid, startOfWeek } from "date-fns";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronDownIcon, ChevronUpIcon } from "../ui/icons";
 
 type InfiniteWeekScrollMobileProps = {
 	initialWeek: Date;
@@ -321,38 +322,20 @@ export default function InfiniteWeekScrollMobile({
 					<div ref={bottomSentinelRef} className="h-px" />
 				</div>
 
-				{/* Top fade */}
+				{/* Top affordance */}
 				{canScrollUp && (
-					<div
-						className="
-						pointer-events-none
-						absolute inset-x-0 top-0 z-20
-						h-10
-						bg-linear-to-b
-						from-canvas/90
-						to-transparent
-					"
-					>
-						<div className="flex justify-center pt-1">
-							<span className="text-xs font-bold text-ink-muted/60">⌃</span>
+					<div className="pointer-events-none absolute left-1/2 top-2 z-30 -translate-x-1/2">
+						<div className="flex items-center justify-center rounded-full border border-border bg-surface/95 p-1 text-ink-muted shadow-sm">
+							<ChevronUpIcon className="h-3 w-3" />
 						</div>
 					</div>
 				)}
 
-				{/* Bottom fade */}
+				{/* Bottom affordance */}
 				{canScrollDown && (
-					<div
-						className="
-						pointer-events-none
-						absolute inset-x-0 bottom-0 z-20
-						h-10
-						bg-linear-to-t
-						from-canvas/90
-						to-transparent
-					"
-					>
-						<div className="flex h-full items-end justify-center pb-1">
-							<span className="text-xs font-bold text-ink-muted/60">⌄</span>
+					<div className="pointer-events-none absolute bottom-2 left-1/2 z-30 -translate-x-1/2">
+						<div className="flex items-center justify-center rounded-full border border-border bg-surface/95 p-1 text-ink-muted shadow-sm">
+							<ChevronDownIcon className="h-3 w-3" />
 						</div>
 					</div>
 				)}

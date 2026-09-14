@@ -13,19 +13,19 @@
 	/* (default) theme; [data-theme="light"] overrides them further down.*/
 	/* ================================================================ */
 
-	--color-canvas: #0b0c0f;
-	--color-surface: #16171c;
-	--color-surface-sunken: #1e2026;
-	--color-border: #2a2c33;
+	--color-canvas: #202124;
+	--color-surface: #292a2d;
+	--color-surface-sunken: #35363a;
+	--color-border: #3c4043;
 
 	--color-ink: #f2f2f4;
 	--color-ink-muted: #9a9ba3;
 	--color-ink-faint: #63646c;
 
-	--color-accent: #ff5a36;
-	--color-accent-dark: #e0431f;
-	--color-accent-light: #ff8a6b;
-	--color-accent-tint: #3a2018;
+	--color-accent: #ff6b5b;
+	--color-accent-dark: #e0503f;
+	--color-accent-light: #ff9686;
+	--color-accent-tint: #3a221e;
 
 	--color-success: #3ddc84;
 	--color-success-tint: #123322;
@@ -61,19 +61,19 @@
 }
 
 [data-theme="light"] {
-	--color-canvas: #f7f7f8;
+	--color-canvas: #f1f3f4;
 	--color-surface: #ffffff;
-	--color-surface-sunken: #f0f0f2;
-	--color-border: #e2e2e6;
+	--color-surface-sunken: #e8eaed;
+	--color-border: #dadce0;
 
 	--color-ink: #16171c;
 	--color-ink-muted: #63646c;
 	--color-ink-faint: #a5a6ad;
 
-	--color-accent: #e0431f;
-	--color-accent-dark: #b83718;
-	--color-accent-light: #ff8a6b;
-	--color-accent-tint: #fbe4dd;
+	--color-accent: #e0503f;
+	--color-accent-dark: #b83f30;
+	--color-accent-light: #ff9686;
+	--color-accent-tint: #fbe2de;
 
 	--color-success: #1f9d5c;
 	--color-success-tint: #dcf3e6;

@@ -1,5 +1,6 @@
 import { addWeeks, isAfter, isBefore, startOfWeek } from "date-fns";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronDownIcon, ChevronUpIcon } from "../ui/icons";
 
 type InfiniteWeekScrollProps = {
 	initialWeek: Date;
@@ -372,56 +373,20 @@ export default function InfiniteWeekScroll({
 				<div ref={bottomSentinelRef} className="h-px" />
 			</div>
 
-			{/* Scroll up indicator */}
-			{canScrollUp && (
-				<div
-					className="
-						pointer-events-none
-						absolute inset-x-0 top-0 z-20
-						h-8
-						bg-linear-to-b
-						from-canvas/80
-						to-transparent
-					"
-				>
-					<div className="flex justify-center pt-1">
-						<span className="text-xs font-bold text-ink-muted/60">⌃</span>
-					</div>
-				</div>
-			)}
-
-			{/* Scroll down indicator */}
-			{canScrollDown && (
-				<div
-					className="
-						pointer-events-none
-						absolute inset-x-0 bottom-0 z-20
-						h-8
-						bg-linear-to-t
-						from-canvas/80
-						to-transparent
-					"
-				>
-					<div className="flex h-full items-end justify-center pb-1">
-						<span className="text-xs font-bold text-ink-muted/60">⌄</span>
-					</div>
-				</div>
-			)}
-
-			{/* Loading previous */}
-			{isLoadingPrevious && (
+			{/* Top affordance: earlier weeks are loading, or just scrollable */}
+			{(isLoadingPrevious || canScrollUp) && (
 				<div className="pointer-events-none absolute left-1/2 top-2 z-30 -translate-x-1/2">
-					<div className="rounded-full border border-border bg-surface/95 px-3 py-1 text-[10px] font-bold text-ink-muted shadow-sm">
-						Loading earlier weeks...
+					<div className="flex items-center gap-1.5 rounded-full border border-border bg-surface/95 px-3 py-1 text-[10px] font-bold text-ink-muted shadow-sm">
+						{isLoadingPrevious ? "Loading earlier weeks..." : <ChevronUpIcon className="h-3 w-3" />}
 					</div>
 				</div>
 			)}
 
-			{/* Loading next */}
-			{isLoadingNext && (
+			{/* Bottom affordance: later weeks are loading, or just scrollable */}
+			{(isLoadingNext || canScrollDown) && (
 				<div className="pointer-events-none absolute bottom-2 left-1/2 z-30 -translate-x-1/2">
-					<div className="rounded-full border border-border bg-surface/95 px-3 py-1 text-[10px] font-bold text-ink-muted shadow-sm">
-						Loading later weeks...
+					<div className="flex items-center gap-1.5 rounded-full border border-border bg-surface/95 px-3 py-1 text-[10px] font-bold text-ink-muted shadow-sm">
+						{isLoadingNext ? "Loading later weeks..." : <ChevronDownIcon className="h-3 w-3" />}
 					</div>
 				</div>
 			)}

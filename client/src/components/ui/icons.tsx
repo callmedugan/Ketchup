@@ -58,3 +58,19 @@ export function LogoutIcon({ className = "h-5 w-5" }: IconProps) {
 		</svg>
 	);
 }
+
+export function ChevronUpIcon({ className = "h-4 w-4" }: IconProps) {
+	return (
+		<svg {...commonProps} className={className}>
+			<path d="M5 14l7-7 7 7" />
+		</svg>
+	);
+}
+
+export function ChevronDownIcon({ className = "h-4 w-4" }: IconProps) {
+	return (
+		<svg {...commonProps} className={className}>
+			<path d="M5 10l7 7 7-7" />
+		</svg>
+	);
+}
