@@ -1,15 +1,21 @@
 import { useState, type SubmitEvent } from "react";
 import type { ScheduleRepeatType } from "../../utils/types";
 import { useSchedule } from "../../contexts/SchedulesContext";
-import { useAuth } from "../../contexts/AuthContext";
 import { format } from "date-fns";
-import ModalContainer from "../common/ModalContainer";
-import ModalHeader from "../common/ModalHeader";
+import Modal from "../ui/Modal";
+import { Input } from "../ui/Input";
+import Button from "../ui/Button";
 
 type NewScheduleModalProps = {
 	onClose: () => void;
 	initialDate?: Date;
 };
+
+const REPEAT_OPTIONS: { value: ScheduleRepeatType; label: string }[] = [
+	{ value: "once", label: "Once" },
+	{ value: "daily", label: "Daily" },
+	{ value: "weekly", label: "Weekly" },
+];
 
 export default function NewScheduleModal({ onClose, initialDate }: NewScheduleModalProps) {
 	const [date, setDate] = useState(format(initialDate ?? new Date(), "yyyy-MM-dd"));
@@ -21,15 +27,12 @@ export default function NewScheduleModal({ onClose, initialDate }: NewScheduleMo
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const { addUserSchedule, fetchScheduleData } = useSchedule();
-	const { user } = useAuth();
 
 	/* ========================================================================= */
 	//                        submit
 	/* ========================================================================= */
 
 	async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-		if (!user) return;
-
 		event.preventDefault();
 
 		setError(null);
@@ -45,7 +48,9 @@ export default function NewScheduleModal({ onClose, initialDate }: NewScheduleMo
 		setIsSubmitting(true);
 		setError(null);
 
-		addUserSchedule(user.id, date, startTime, endTime, repeatType, user.timezone)
+		const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+		addUserSchedule(date, startTime, endTime, repeatType, timezone)
 			.then(() => {
 				fetchScheduleData();
 				onClose();
@@ -64,22 +69,19 @@ export default function NewScheduleModal({ onClose, initialDate }: NewScheduleMo
 	}
 
 	return (
-		<ModalContainer onClose={onClose}>
-			<ModalHeader title="Add availability" onClose={onClose} />
-
+		<Modal title="Add availability" onClose={onClose}>
 			<form onSubmit={handleSubmit} className="space-y-2.5 overflow-y-auto p-4 sm:space-y-3 sm:p-5">
 				{/* Step 1 */}
 				<section>
 					<StepTitle text="Choose a date" num="1" />
 
-					<input
+					<Input
 						id="availability-date"
 						type="date"
 						required
 						min={format(new Date(), "yyyy-MM-dd")}
 						value={date}
 						onChange={(event) => setDate(event.target.value)}
-						className="mx-auto block w-[96%] rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 sm:w-full sm:py-2.5 sm:text-sm"
 					/>
 				</section>
 
@@ -90,49 +92,32 @@ export default function NewScheduleModal({ onClose, initialDate }: NewScheduleMo
 					{/* Quick select */}
 					<div className="grid grid-cols-4 gap-1.5 sm:gap-2">
 						<PresetButton label="Morning" onClick={() => setPreset("09:00", "12:00")} />
-
 						<PresetButton label="Afternoon" onClick={() => setPreset("12:00", "17:00")} />
-
 						<PresetButton label="Evening" onClick={() => setPreset("17:00", "22:00")} />
-
 						<PresetButton label="All Day" onClick={() => setPreset("00:00", "23:59")} />
 					</div>
 
 					{/* Custom time */}
-					<div className="mt-2">
-						<div className="grid grid-cols-2 gap-2 sm:gap-4">
-							<div>
-								<label htmlFor="availability-start" className="mb-1 block text-[11px] font-semibold text-stone-500 sm:mb-1.5 sm:text-xs">
-									Start
-								</label>
+					<div className="mt-2 grid grid-cols-2 gap-2 sm:gap-4">
+						<Input
+							label="Start"
+							id="availability-start"
+							type="time"
+							step={900}
+							required
+							value={startTime}
+							onChange={(event) => setStartTime(event.target.value)}
+						/>
 
-								<input
-									id="availability-start"
-									type="time"
-									step={900}
-									required
-									value={startTime}
-									onChange={(event) => setStartTime(event.target.value)}
-									className="w-full min-w-0 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-[11px] text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 sm:rounded-xl sm:px-3 sm:py-2.5 sm:text-sm"
-								/>
-							</div>
-
-							<div>
-								<label htmlFor="availability-end" className="mb-1 block text-[11px] font-semibold text-stone-500 sm:mb-1.5 sm:text-xs">
-									End
-								</label>
-
-								<input
-									id="availability-end"
-									type="time"
-									step={900}
-									required
-									value={endTime}
-									onChange={(event) => setEndTime(event.target.value)}
-									className="w-full min-w-0 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-[11px] text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 sm:rounded-xl sm:px-3 sm:py-2.5 sm:text-sm"
-								/>
-							</div>
-						</div>
+						<Input
+							label="End"
+							id="availability-end"
+							type="time"
+							step={900}
+							required
+							value={endTime}
+							onChange={(event) => setEndTime(event.target.value)}
+						/>
 					</div>
 				</section>
 
@@ -140,33 +125,37 @@ export default function NewScheduleModal({ onClose, initialDate }: NewScheduleMo
 				<section>
 					<StepTitle text="Select frequency" num="3" />
 
-					<select
-						id="availability-repeat"
-						value={repeatType}
-						onChange={(event) => setRepeatType(event.target.value as ScheduleRepeatType)}
-						className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs text-stone-800 outline-none transition focus:border-[#b65a4f] focus:ring-2 focus:ring-[#b65a4f]/20 sm:py-2.5 sm:text-sm"
-					>
-						<option value="once">Once</option>
-						<option value="daily">Daily</option>
-						<option value="weekly">Weekly</option>
-					</select>
+					<div className="grid grid-cols-3 gap-1.5 rounded-xl border border-border bg-surface-sunken p-1">
+						{REPEAT_OPTIONS.map((option) => (
+							<button
+								key={option.value}
+								type="button"
+								onClick={() => setRepeatType(option.value)}
+								className={`rounded-lg py-2 text-xs font-bold transition sm:text-sm ${
+									repeatType === option.value ? "bg-brand-red text-white shadow-sm" : "text-ink-muted hover:text-ink"
+								}`}
+							>
+								{option.label}
+							</button>
+						))}
+					</div>
 				</section>
 
 				{/* Error */}
-				{error && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 sm:text-sm">{error}</p>}
+				{error && <p className="rounded-lg bg-danger-tint px-3 py-2 text-xs text-danger sm:text-sm">{error}</p>}
 
 				{/* Actions */}
 				<div className="flex gap-2 pt-1 sm:justify-end">
-					<button type="button" onClick={onClose} className="btn-secondary flex-1 sm:flex-none">
+					<Button type="button" variant="secondary" onClick={onClose} className="flex-1 sm:flex-none">
 						Cancel
-					</button>
+					</Button>
 
-					<button type="submit" disabled={isSubmitting} className="btn-primary flex-1 sm:flex-none">
+					<Button type="submit" disabled={isSubmitting} className="flex-1 sm:flex-none">
 						{isSubmitting ? "Adding..." : "Add availability"}
-					</button>
+					</Button>
 				</div>
 			</form>
-		</ModalContainer>
+		</Modal>
 	);
 }
 
@@ -180,7 +169,7 @@ function PresetButton({ label, onClick }: PresetButtonProps) {
 		<button
 			type="button"
 			onClick={onClick}
-			className="rounded-xl border border-stone-300 bg-white px-1.5 py-2 text-xs font-bold text-stone-700 transition hover:border-[#b65a4f] hover:bg-[#fff4ef] hover:text-brand-red sm:px-3 sm:py-2.5 sm:text-sm"
+			className="rounded-xl border border-border bg-surface px-1.5 py-2 text-xs font-bold text-ink transition hover:border-brand-red hover:bg-brand-red-tint hover:text-brand-red-dark sm:px-3 sm:py-2.5 sm:text-sm"
 		>
 			{label}
 		</button>
@@ -198,7 +187,7 @@ function StepTitle({ text, num }: StepTitleProps) {
 			<div className="modal-step-number">{num}</div>
 
 			<div>
-				<p className="text-xs font-bold text-stone-800 sm:text-sm">{text}</p>
+				<p className="text-xs font-bold text-ink sm:text-sm">{text}</p>
 			</div>
 		</div>
 	);

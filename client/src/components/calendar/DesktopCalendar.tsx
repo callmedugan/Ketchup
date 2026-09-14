@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { addDays, format, getDay, isBefore, isSameDay, isSameWeek, startOfDay } from "date-fns";
+import { MAX_SCHEDULES_PER_DAY } from "@ketchup/shared";
 
 import type { ScheduleInstance } from "./Instance";
 
@@ -29,11 +30,11 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
 	/* ========================================================================= */
 
 	return (
-		<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+		<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
 			{showHeader()}
 
 			{/* Weekday header */}
-			<div className="grid shrink-0 grid-cols-7 border-b border-stone-200 bg-[#f3e4d7]">
+			<div className="grid shrink-0 grid-cols-7 border-b border-border bg-surface-sunken">
 				{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => {
 					const isTodayColumn = isViewingCurrentWeek && index === todayColumnIndex;
 
@@ -41,12 +42,11 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
 						<div
 							key={day}
 							className={`
-								border-r border-stone-200
+								border-r border-border last:border-r-0
 								px-2 py-1.5 text-center
 								text-[10px] font-bold uppercase
 								tracking-[0.12em]
-								last:border-r-0
-								${isTodayColumn ? "bg-brand-red/10 text-brand-red" : `text-brand-muted ${index % 2 === 1 ? "bg-[#efe0d3]" : ""}`}
+								${isTodayColumn ? "bg-brand-red/10 text-brand-red" : "text-ink-muted"}
 							`}
 						>
 							{day}
@@ -76,7 +76,7 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
 
 		return (
 			<div className="flex h-14 shrink-0 items-center justify-center border-b border-brand-red-dark bg-linear-to-r from-brand-red-dark via-brand-red to-brand-red-dark px-4">
-				<h2 className="text-xl font-bold tracking-tight text-brand-cream">{format(firstSaturday, "MMMM yyyy")}</h2>
+				<h2 className="font-display text-xl font-semibold tracking-tight text-white">{format(firstSaturday, "MMMM yyyy")}</h2>
 			</div>
 		);
 	}
@@ -90,42 +90,32 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
 
 		const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
 
-		return <div className="grid h-full min-h-0 grid-cols-7">{days.map((day, index) => showDay(day, index, schedules))}</div>;
+		return <div className="grid h-full min-h-0 grid-cols-7">{days.map((day) => showDay(day, schedules))}</div>;
 	}
 
 	/* ========================================================================= */
 	//                        day
 	/* ========================================================================= */
 
-	function showDay(day: Date, columnIndex: number, schedules: ScheduleInstance[]) {
+	function showDay(day: Date, schedules: ScheduleInstance[]) {
 		const isToday = isSameDay(day, new Date());
 
 		const isPast = isBefore(day, startOfDay(new Date()));
-
-		const isAlternateColumn = columnIndex % 2 === 1;
 
 		const dayKey = format(day, "yyyy-MM-dd");
 
 		const daySchedules = schedules.filter((schedule) => format(schedule.start, "yyyy-MM-dd") === dayKey);
 
-		const canAddAvailability = !isPast && daySchedules.length < 4;
+		const canAddAvailability = !isPast && daySchedules.length < MAX_SCHEDULES_PER_DAY;
 
-		const background = isToday
-			? "bg-[#fff4ec]"
-			: isPast
-				? isAlternateColumn
-					? "bg-stone-300/80"
-					: "bg-stone-200"
-				: isAlternateColumn
-					? "bg-[#faf7f2]"
-					: "bg-brand-card";
+		const background = isToday ? "bg-brand-red-tint/30" : isPast ? "bg-surface-sunken/70" : "bg-surface";
 
 		return (
 			<div
 				key={day.toISOString()}
 				className={`
                     group/day relative min-h-0 min-w-0 overflow-hidden
-                    border-b border-r border-stone-200
+                    border-b border-r border-border last:border-r-0
                     ${background}
                     ${isToday ? "ring-2 ring-inset ring-brand-red" : ""}
                 `}
@@ -136,7 +126,7 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
                         absolute left-2 top-3 z-10
                         flex h-6 w-6 items-center justify-center
                         rounded-full text-xs font-bold
-                        ${isToday ? "bg-brand-red text-white shadow-sm" : isPast ? "text-brand-muted/55" : "text-brand-text"}
+                        ${isToday ? "bg-brand-red text-white shadow-sm" : isPast ? "text-ink-faint" : "text-ink"}
                     `}
 				>
 					{format(day, "d")}
@@ -165,17 +155,17 @@ export default function DesktopCalendar({ currentWeek, minWeek, maxWeek, getSche
                                     flex w-full shrink-0
                                     items-center justify-center
                                     rounded-lg border border-dashed
-                                    border-stone-300
-                                    bg-white/30
+                                    border-border
+                                    bg-surface/50
                                     px-2 py-1.5
                                     text-[10px] font-bold
-                                    text-brand-muted/50
+                                    text-ink-muted/50
                                     opacity-0
                                     transition duration-150
                                     group-hover/day:opacity-100
                                     focus:opacity-100
                                     hover:border-brand-red-light
-                                    hover:bg-brand-pink-light/60
+                                    hover:bg-brand-red-tint/60
                                     hover:text-brand-red
                                     active:scale-[0.99]
                                 "

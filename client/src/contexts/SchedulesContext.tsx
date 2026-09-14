@@ -24,7 +24,6 @@ type ScheduleContextType = {
 	buildScheduleInstances: (rangeStart: Date, rangeEnd: Date) => ScheduleInstance[];
 	deleteUserSchedule: (id: string) => Promise<void>;
 	addUserSchedule: (
-		userId: string,
 		date: string,
 		startTime: string,
 		endTime: string,
@@ -93,18 +92,10 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
 		await fetchScheduleData();
 	}
 
-	async function addUserSchedule(
-		userId: string,
-		date: string,
-		startTime: string,
-		endTime: string,
-		repeatType: ScheduleRepeatType,
-		timezone: string,
-	): Promise<void> {
+	async function addUserSchedule(date: string, startTime: string, endTime: string, repeatType: ScheduleRepeatType, timezone: string): Promise<void> {
 		const response = await authFetch("/api/schedules", {
 			method: "POST",
 			body: JSON.stringify({
-				userId,
 				startTime: `${date}T${startTime}`,
 				endTime: `${date}T${endTime}`,
 				repeatType,

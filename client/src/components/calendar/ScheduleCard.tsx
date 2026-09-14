@@ -6,13 +6,11 @@ import { useState } from "react";
 import type { ScheduleInstance } from "./Instance";
 
 import OverlapModal from "./OverlapModal";
-import Avatar from "../common/Avatar";
+import { AvatarStack } from "../ui/Avatar";
 
 type ScheduleCardProps = {
 	instance: ScheduleInstance;
 };
-
-const MAX_VISIBLE_AVATARS = 3;
 
 export default function ScheduleCard({ instance }: ScheduleCardProps) {
 	const [isOpen, setIsOpen] = useState(false);
@@ -46,19 +44,7 @@ export default function ScheduleCard({ instance }: ScheduleCardProps) {
 						{format(instance.start, "p")} – {format(instance.end, "p")}
 					</span>
 
-					{overlapFriends.length > 0 && !hasPassed && (
-						<div className="flex shrink-0 -space-x-1.5" title={overlapFriends.map((friend) => friend.name).join(", ")}>
-							{overlapFriends.slice(0, MAX_VISIBLE_AVATARS).map((friend) => (
-								<Avatar key={friend.id} name={friend.name} rawUrl={friend.avatarUrl} variant="tiny" className="ring-2 ring-white" />
-							))}
-
-							{overlapFriends.length > MAX_VISIBLE_AVATARS && (
-								<span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[7px] font-bold text-current ring-2 ring-white">
-									+{overlapFriends.length - MAX_VISIBLE_AVATARS}
-								</span>
-							)}
-						</div>
-					)}
+					{overlapFriends.length > 0 && !hasPassed && <AvatarStack people={overlapFriends} />}
 				</div>
 			</button>
 

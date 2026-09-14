@@ -6,11 +6,11 @@ import type { ScheduleInstance } from "./Instance";
 
 import { useSchedule } from "../../contexts/SchedulesContext";
 
-import Avatar from "../common/Avatar";
+import Avatar from "../ui/Avatar";
 import ScrollableContainer from "../common/ScrollableContainer";
-import ModalContainer from "../common/ModalContainer";
-import ModalHeader from "../common/ModalHeader";
-import HoldButton from "../common/HoldButton";
+import Modal from "../ui/Modal";
+import HoldButton from "../ui/HoldButton";
+import EmptyState from "../ui/EmptyState";
 
 type ScheduleOverlap = ScheduleInstance["overlaps"][number];
 
@@ -55,27 +55,20 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 	/* ========================================================================= */
 
 	return (
-		<ModalContainer onClose={onClose} className={hasPassed ? "bg-stone-100" : ""}>
-			<ModalHeader title="Availability" onClose={onClose} />
-
+		<Modal title="Availability" onClose={onClose} className={hasPassed ? "bg-surface-sunken" : ""}>
 			{/* Schedule info */}
-			<div
-				className={`
-					shrink-0 border-b border-stone-200 px-4 py-3 sm:px-5
-					${hasPassed ? "bg-stone-50" : "bg-brand-surface"}
-				`}
-			>
+			<div className={`shrink-0 border-b border-border px-4 py-3 sm:px-5 ${hasPassed ? "bg-surface-sunken" : "bg-surface-sunken/60"}`}>
 				<div className="flex items-start justify-between gap-4">
 					<div className="min-w-0">
-						<p className={`text-sm font-bold ${hasPassed ? "text-brand-muted/70" : "text-brand-text"}`}>{format(instance.start, "EEEE, MMMM d")}</p>
+						<p className={`text-sm font-bold ${hasPassed ? "text-ink-muted/70" : "text-ink"}`}>{format(instance.start, "EEEE, MMMM d")}</p>
 
-						<p className={`mt-0.5 text-xs font-medium sm:text-sm ${hasPassed ? "text-brand-muted/60" : "text-brand-muted"}`}>
+						<p className={`mt-0.5 text-xs font-medium sm:text-sm ${hasPassed ? "text-ink-muted/60" : "text-ink-muted"}`}>
 							{format(instance.start, "p")} – {format(instance.end, "p")}
 						</p>
 					</div>
 
 					{!hasPassed && friendCount > 0 && (
-						<div className="shrink-0 rounded-full border border-brand-red-light/40 bg-brand-pink-light px-2.5 py-1 text-[10px] font-bold text-brand-red sm:text-xs">
+						<div className="shrink-0 rounded-full border border-brand-red-light/40 bg-brand-red-tint px-2.5 py-1 text-[10px] font-bold text-brand-red-dark sm:text-xs">
 							{friendCount} friend
 							{friendCount !== 1 && "s"} free
 						</div>
@@ -89,29 +82,25 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 					{overlaps.length > 0 ? (
 						overlaps.map(showOverlap)
 					) : (
-						<div className="card px-4 py-6 text-center">
-							<p className={`text-xs font-medium sm:text-sm ${hasPassed ? "text-brand-muted/60" : "text-brand-muted"}`}>
-								No friends are free during this availability.
-							</p>
-						</div>
+						<EmptyState title="No overlap yet" description="No friends are free during this availability." />
 					)}
 				</div>
 			</ScrollableContainer>
 
 			{/* Error */}
 			{error && (
-				<div role="alert" className="mx-4 mb-2 rounded-lg bg-red-50 px-3 py-2 text-center text-xs font-medium text-red-700 sm:mx-5 sm:text-sm">
+				<div role="alert" className="mx-4 mb-2 rounded-lg bg-danger-tint px-3 py-2 text-center text-xs font-medium text-danger sm:mx-5 sm:text-sm">
 					{error}
 				</div>
 			)}
 
 			{/* Footer */}
-			<div className="shrink-0 border-t border-stone-200 bg-brand-card p-3 sm:p-4">
+			<div className="shrink-0 border-t border-border bg-surface p-3 sm:p-4">
 				<HoldButton variant="danger" onComplete={handleDeleteSchedule} disabled={loading} className="w-full">
 					{loading ? "Deleting..." : "Delete availability"}
 				</HoldButton>
 			</div>
-		</ModalContainer>
+		</Modal>
 	);
 
 	/* ========================================================================= */
@@ -144,7 +133,7 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 						mt-2.5 w-full
 						${
 							hasPassed
-								? "cursor-not-allowed rounded-xl bg-stone-200 px-3 py-2 text-xs font-bold text-brand-muted/70 sm:px-4 sm:py-2.5 sm:text-sm"
+								? "cursor-not-allowed rounded-xl bg-surface-sunken px-3 py-2 text-xs font-bold text-ink-muted/70 sm:px-4 sm:py-2.5 sm:text-sm"
 								: "btn-primary"
 						}
 					`}
@@ -175,21 +164,21 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 			duration = `${hours} hr${hours !== 1 ? "s" : ""} ` + `${remainingMinutes} min${remainingMinutes !== 1 ? "s" : ""}`;
 		}
 
-		let durationStyle = "text-brand-muted";
+		let durationStyle = "text-ink-muted";
 
 		if (minutes >= 180) {
-			durationStyle = "text-green-700";
+			durationStyle = "text-success";
 		} else if (minutes >= 60) {
-			durationStyle = "text-amber-700";
+			durationStyle = "text-brand-mustard-dark";
 		}
 
 		return (
 			<div className="min-w-0 flex-1">
-				<div className="truncate text-sm font-semibold text-brand-text">{overlap.user.name}</div>
+				<div className="truncate text-sm font-semibold text-ink">{overlap.user.name}</div>
 
 				<p className={`mt-0.5 text-xs font-bold sm:text-sm ${durationStyle}`}>{duration}</p>
 
-				<p className="mt-0.5 text-[10px] font-medium text-brand-muted sm:text-xs">
+				<p className="mt-0.5 text-[10px] font-medium text-ink-muted sm:text-xs">
 					{format(overlap.start, "p")} – {format(overlap.end, "p")}
 				</p>
 			</div>
