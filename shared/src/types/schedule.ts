@@ -27,7 +27,17 @@ export const scheduleSchema = z.object({
 });
 export type Schedule = z.infer<typeof scheduleSchema>;
 
-export const scheduleWithUserSchema = scheduleSchema.extend({ user: userPublicSchema });
+// the active (pending/confirmed) plan a schedule is currently committed to, if any -
+// a schedule can be tied to at most one active plan at a time (enforced at creation)
+export const scheduleActivePlanSchema = z.object({
+	id: z.uuid(),
+	title: z.string(),
+	status: z.enum(["pending", "confirmed"]),
+	meetTime: z.coerce.date(),
+});
+export type ScheduleActivePlan = z.infer<typeof scheduleActivePlanSchema>;
+
+export const scheduleWithUserSchema = scheduleSchema.extend({ user: userPublicSchema, plan: scheduleActivePlanSchema.nullable().optional() });
 export type ScheduleWithUser = z.infer<typeof scheduleWithUserSchema>;
 
 /* ========================================================================= */

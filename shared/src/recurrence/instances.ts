@@ -1,6 +1,6 @@
-import { addDays, addWeeks } from "date-fns";
+import { addDays, addWeeks, isSameDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
-import type { ScheduleWithUser } from "../types/schedule.js";
+import type { ScheduleActivePlan, ScheduleWithUser } from "../types/schedule.js";
 import type { UserPublic } from "../types/user.js";
 
 export type ScheduleInstanceOverlap = {
@@ -17,6 +17,9 @@ export type ScheduleInstance = {
 	end: Date;
 	user: UserPublic;
 	overlaps: ScheduleInstanceOverlap[];
+	// the active plan made from this specific occurrence, if any - a recurring schedule's
+	// other occurrences are unaffected even though they share the same underlying scheduleId
+	plan: ScheduleActivePlan | null;
 };
 
 /**
@@ -83,6 +86,10 @@ export function buildInstances(schedules: ScheduleWithUser[], rangeStart: Date, 
 }
 
 function createInstance(schedule: ScheduleWithUser, start: Date, end: Date): ScheduleInstance {
+	// schedule.plan applies to every occurrence of the underlying schedule, but the plan itself
+	// was only ever made for one specific meet time - only attach it to the matching occurrence
+	const plan = schedule.plan && isSameDay(schedule.plan.meetTime, start) ? schedule.plan : null;
+
 	return {
 		id: getInstanceId(schedule.id, start),
 		scheduleId: schedule.id,
@@ -90,6 +97,7 @@ function createInstance(schedule: ScheduleWithUser, start: Date, end: Date): Sch
 		end,
 		user: schedule.user,
 		overlaps: [],
+		plan,
 	};
 }
 

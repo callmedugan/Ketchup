@@ -360,6 +360,26 @@ export async function areSchedulesAvailableForPlan(scheduleIds: [string, string]
 	return result === undefined;
 }
 
+export type ScheduleActivePlanRow = { id: string; title: string; status: "pending" | "confirmed"; meetTime: Date };
+
+// for the given schedules, returns the active (pending/confirmed) plan each is committed to, if any -
+// used to show on the calendar when a schedule is already tied to a plan
+export async function getActivePlansForSchedules(scheduleIds: string[]): Promise<Map<string, ScheduleActivePlanRow>> {
+	if (scheduleIds.length === 0) return new Map();
+
+	const rows = await db
+		.select({ scheduleId: planSchedules.scheduleId, id: plans.id, title: plans.title, status: plans.status, meetTime: plans.meetTime })
+		.from(planSchedules)
+		.innerJoin(plans, eq(plans.id, planSchedules.planId))
+		.where(and(inArray(planSchedules.scheduleId, scheduleIds), or(eq(plans.status, "pending"), eq(plans.status, "confirmed"))));
+
+	const result = new Map<string, ScheduleActivePlanRow>();
+	for (const row of rows) {
+		result.set(row.scheduleId, { id: row.id, title: row.title, status: row.status as "pending" | "confirmed", meetTime: row.meetTime });
+	}
+	return result;
+}
+
 export async function addPlanToDb(plan: Plan, scheduleIds: [string, string]): Promise<PlanRecord | undefined> {
 	return db.transaction(async (tx) => {
 		const [result] = await tx.insert(plans).values(plan).onConflictDoNothing().returning();

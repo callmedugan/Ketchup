@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { UnauthorizedError, BadRequestError, NotFoundError } from "../error.js";
-import { addScheduleToDb, deleteScheduleFromDb, getScheduleByUserFromDb, getUserAndFriendsSchedulesFromDb } from "../db/queries.js";
+import { addScheduleToDb, deleteScheduleFromDb, getActivePlansForSchedules, getScheduleByUserFromDb, getUserAndFriendsSchedulesFromDb } from "../db/queries.js";
 import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 import { logInfo } from "./logging.js";
 import { format } from "date-fns";
@@ -95,8 +95,13 @@ export async function handlerGetUserAndFriendSchedules(req: Request, res: Respon
 	if (!userId) throw new UnauthorizedError("User not authenticated");
 
 	// call db
-	const result = await getUserAndFriendsSchedulesFromDb(userId);
+	const { userSchedules, friendSchedules } = await getUserAndFriendsSchedulesFromDb(userId);
+
+	// attach the active plan (if any) each of the user's own schedules is committed to -
+	// only the user's own schedules are ever rendered as calendar cards, so friend schedules don't need this
+	const activePlansBySchedule = await getActivePlansForSchedules(userSchedules.map((schedule) => schedule.id));
+	const userSchedulesWithPlans = userSchedules.map((schedule) => ({ ...schedule, plan: activePlansBySchedule.get(schedule.id) ?? null }));
 
 	// return
-	res.status(200).json(result);
+	res.status(200).json({ userSchedules: userSchedulesWithPlans, friendSchedules });
 }

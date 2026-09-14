@@ -11,6 +11,7 @@ import ScrollableContainer from "../common/ScrollableContainer";
 import Modal from "../ui/Modal";
 import HoldButton from "../ui/HoldButton";
 import EmptyState from "../ui/EmptyState";
+import Badge from "../ui/Badge";
 
 type ScheduleOverlap = ScheduleInstance["overlaps"][number];
 
@@ -65,6 +66,19 @@ export default function OverlapModal({ instance, onClose }: OverlapModalProps) {
 						<p className={`mt-0.5 text-xs font-medium sm:text-sm ${hasPassed ? "text-ink-muted/60" : "text-ink-muted"}`}>
 							{format(instance.start, "p")} – {format(instance.end, "p")}
 						</p>
+
+						{instance.plan && (
+							<button
+								type="button"
+								onClick={() => navigate("/plans")}
+								className="mt-1.5 inline-flex"
+								title="View this plan"
+							>
+								<Badge tone={instance.plan.status === "confirmed" ? "success" : "warning"}>
+									{instance.plan.status === "confirmed" ? "Confirmed" : "Pending"}: {instance.plan.title}
+								</Badge>
+							</button>
+						)}
 					</div>
 
 					{!hasPassed && friendCount > 0 && (

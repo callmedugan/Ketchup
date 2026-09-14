@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildInstances, buildUserInstances } from "../recurrence/instances.js";
-import { makeSchedule, mondayAt } from "./testUtils.js";
+import { makePlan, makeSchedule, mondayAt } from "./testUtils.js";
 
 describe("buildInstances", () => {
 	it("expands a weekly schedule into one instance per week within the range", () => {
@@ -28,6 +28,24 @@ describe("buildInstances", () => {
 
 		expect(instances).toHaveLength(1);
 		expect(instances[0]?.scheduleId).toBe(inRange.id);
+	});
+
+	it("attaches the schedule's plan only to the occurrence matching the plan's meet time", () => {
+		const plan = makePlan({ meetTime: mondayAt(14, 18) });
+		const schedule = makeSchedule(mondayAt(0, 18), mondayAt(0, 20), "weekly", "user-a", plan);
+
+		const instances = buildInstances([schedule], mondayAt(0, 0), mondayAt(21, 0));
+
+		expect(instances).toHaveLength(3);
+		expect(instances.map((instance) => instance.plan?.id ?? null)).toEqual([null, null, plan.id]);
+	});
+
+	it("leaves plan null on every occurrence when the schedule has no active plan", () => {
+		const schedule = makeSchedule(mondayAt(0, 18), mondayAt(0, 20), "weekly");
+
+		const instances = buildInstances([schedule], mondayAt(0, 0), mondayAt(14, 0));
+
+		expect(instances.every((instance) => instance.plan === null)).toBe(true);
 	});
 });
 

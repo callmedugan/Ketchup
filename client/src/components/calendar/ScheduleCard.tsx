@@ -38,6 +38,20 @@ export default function ScheduleCard({ instance }: ScheduleCardProps) {
 				{/* Corner */}
 				<div className="pointer-events-none absolute right-0 top-0 h-3 w-3 bg-current opacity-10 [clip-path:polygon(0_0,100%_0,100%_100%)]" />
 
+				{/* Plan indicator */}
+				{instance.plan && (
+					<span
+						className={`absolute -right-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white text-white shadow-sm ${
+							instance.plan.status === "confirmed" ? "bg-success" : "bg-brand-mustard"
+						}`}
+						title={`${instance.plan.status === "confirmed" ? "Confirmed plan" : "Pending plan"}: ${instance.plan.title}`}
+					>
+						<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-2.5">
+							<path d="M5 10l3.5 3.5L15 6.5" />
+						</svg>
+					</span>
+				)}
+
 				{/* Time */}
 				<div className="flex min-w-0 items-center justify-between gap-1.5">
 					<span className="truncate text-[9px] font-bold lg:text-[10px]">

@@ -1,8 +1,14 @@
-import type { ScheduleRepeatType, ScheduleWithUser } from "../types/schedule.js";
+import type { ScheduleActivePlan, ScheduleRepeatType, ScheduleWithUser } from "../types/schedule.js";
 
 let counter = 0;
 
-export function makeSchedule(start: Date, end: Date, repeatType: ScheduleRepeatType, userId = "user-a"): ScheduleWithUser {
+export function makeSchedule(
+	start: Date,
+	end: Date,
+	repeatType: ScheduleRepeatType,
+	userId = "user-a",
+	plan: ScheduleActivePlan | null = null,
+): ScheduleWithUser {
 	counter += 1;
 	return {
 		id: `schedule-${counter}`,
@@ -13,7 +19,12 @@ export function makeSchedule(start: Date, end: Date, repeatType: ScheduleRepeatT
 		createdAt: start,
 		updatedAt: start,
 		user: { id: userId, name: userId, avatarUrl: "ketchup", bio: "", timezone: "UTC" },
+		plan,
 	};
+}
+
+export function makePlan(overrides: Partial<ScheduleActivePlan> = {}): ScheduleActivePlan {
+	return { id: "plan-1", title: "Dinner", status: "pending", meetTime: mondayAt(0, 18), ...overrides };
 }
 
 // 2024-01-01 is a Monday (in UTC). Builds a genuine UTC instant so tests are
